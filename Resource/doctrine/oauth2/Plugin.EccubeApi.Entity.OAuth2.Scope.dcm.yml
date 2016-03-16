@@ -1,0 +1,20 @@
+Plugin\EccubeApi\Entity\OAuth2\Scope:
+  type: entity
+  table: plg_oauth2_scope
+  repositoryClass:  Plugin\EccubeApi\Repository\OAuth2\ScopeRepository
+  id:
+    id:
+      type:   integer
+      generator:
+        strategy: AUTO
+  fields:
+    scope:
+      type:   string
+      length: 80
+      unique: true
+    is_default:
+      type:   boolean
+  indexes:
+    plg_oauth2_scope_index:
+      columns:
+          - scope

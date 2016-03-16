@@ -16,24 +16,24 @@ use Symfony\Component\Filesystem\Filesystem;
 
 class PluginManager extends AbstractPluginManager
 {
-
     /**
-     * @var string コピー元リソースディレクトリ
+     * @var array エンティティクラスの配列
      */
-    private $origin;
-
-    /**
-     * @var string コピー先リソースディレクトリ
-     */
-    private $target;
-
+    private $classes;
 
     public function __construct()
     {
-        // コピー元のディレクトリ
-        $this->origin = __DIR__ . '/Resource/dist/swagger-ui';
-        // コピー先のディレクトリ
-        $this->target = __DIR__ . '/../../../html/plugin/swagger-ui';
+        $this->classes = array(
+            '\Plugin\EccubeApi\Entity\OAuth2\AuthorizationCode',
+            '\Plugin\EccubeApi\Entity\OAuth2\User',
+            '\Plugin\EccubeApi\Entity\OAuth2\Scope',
+            '\Plugin\EccubeApi\Entity\OAuth2\OpenID\UserInfo',
+            '\Plugin\EccubeApi\Entity\OAuth2\OpenID\PublicKey',
+            '\Plugin\EccubeApi\Entity\OAuth2\OpenID\UserInfoAddress',
+            '\Plugin\EccubeApi\Entity\OAuth2\RefreshToken',
+            '\Plugin\EccubeApi\Entity\OAuth2\AccessToken',
+            '\Plugin\EccubeApi\Entity\OAuth2\Client'
+        );
     }
 
     /**
@@ -45,8 +45,6 @@ class PluginManager extends AbstractPluginManager
      */
     public function install($config, $app)
     {
-        // リソースファイルのコピー
-        $this->copyAssets();
     }
 
     /**
@@ -57,8 +55,7 @@ class PluginManager extends AbstractPluginManager
      */
     public function uninstall($config, $app)
     {
-        // リソースファイルの削除
-        $this->removeAssets();
+        $this->migrationSchema($app, __DIR__.'/Resource/doctrine/migrations', $config['code'], 0);
     }
 
     /**
@@ -70,6 +67,7 @@ class PluginManager extends AbstractPluginManager
      */
     public function enable($config, $app)
     {
+        $this->migrationSchema($app, __DIR__.'/Resource/doctrine/migrations', $config['code']); // XXX install 時点では namespace を見つけられないため
     }
 
     /**
@@ -85,24 +83,4 @@ class PluginManager extends AbstractPluginManager
     public function update($config, $app)
     {
     }
-
-
-    /**
-     * リソースファイル等をコピー
-     */
-    private function copyAssets()
-    {
-        $file = new Filesystem();
-        $file->mirror($this->origin, $this->target);
-    }
-
-    /**
-     * コピーしたリソースファイルなどを削除
-     */
-    private function removeAssets()
-    {
-        $file = new Filesystem();
-        $file->remove($this->target);
-    }
-
 }

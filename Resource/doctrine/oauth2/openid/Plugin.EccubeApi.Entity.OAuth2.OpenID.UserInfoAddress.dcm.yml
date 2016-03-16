@@ -1,0 +1,34 @@
+Plugin\EccubeApi\Entity\OAuth2\OpenID\UserInfoAddress:
+  type: entity
+  table: plg_oauth2_openid_userinfo_address
+  repositoryClass:  Plugin\EccubeApi\Repository\OAuth2\OpenID\UserInfoAddressRepository
+  id:
+    id:
+      type:   integer
+      generator:
+        strategy: AUTO
+  fields:
+    formatted:
+        type: string
+        length: 4000
+        nullable: true
+    street_address:
+        type: string
+        length: 4000
+        nullable: true
+    locality:
+        type: string
+        length: 4000
+        nullable: true
+    region:
+        type: string
+        length: 4000
+        nullable: true
+    postal_code:
+        type: string
+        length: 32
+        nullable: true
+    country:
+        type: string
+        length: 32
+        nullable: true

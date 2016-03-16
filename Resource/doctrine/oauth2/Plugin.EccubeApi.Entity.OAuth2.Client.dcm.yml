@@ -1,0 +1,39 @@
+Plugin\EccubeApi\Entity\OAuth2\Client:
+  type:             entity
+  table:            plg_oauth2_client
+  repositoryClass:  Plugin\EccubeApi\Repository\OAuth2\ClientRepository
+  id:
+    id:
+      type:   integer
+      generator:
+        strategy: AUTO
+  fields:
+    app_name:
+      type: string
+      length: 255
+    client_identifier:
+      type:       string
+      length: 80
+      unique:     true
+    client_secret:
+      type:       string
+      length: 80
+    redirect_uri:
+      type:       string
+      length: 2000
+      default:    ""
+    scope:
+      type:       string
+      length: 4000
+      nullable:   true
+  manyToOne:
+    Customer:
+      targetEntity: Eccube\Entity\Customer
+      joinColumn:
+        name:                 customer_id
+        referencedColumnName: customer_id
+    Member:
+      targetEntity: Eccube\Entity\Member
+      joinColumn:
+        name:                 member_id
+        referencedColumnName: member_id

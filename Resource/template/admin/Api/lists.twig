@@ -1,0 +1,66 @@
+{% extends 'default_frame.twig' %}
+
+{% block title %}システム設定{% endblock %}
+{% block sub_title %}APIクライアント管理{% endblock %}
+
+{% form_theme form 'Form/bootstrap_3_horizontal_layout.html.twig' %}
+
+{% block javascript %}
+    <script>
+        function changeAction(action) {
+            document.form1.action = action;
+        }
+    </script>
+{% endblock %}
+
+{% block main %}
+    <div class="row">
+        <div id="client_wrap" class="col-md-12">
+            <div id="client_list_box" class="box">
+                <div id="client_list_box__header" class="box-header">
+                    <h3 class="box-title">APIクライアント管理</h3>
+                </div><!-- /.box-header -->
+                <div id="client_list_box__body" class="box-body">
+                    <form name="form1" id="form1" method="post" action="">
+                        <div id="client_list__body" class="table_list">
+                            <div id="client_list__body_inner" class="table-responsive with-border">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr id="client_list__list_header">
+                                            <th id="client_list__header_name">アプリケーション名</th>
+                                            <th id="client_list__header_menu_box">&nbsp;</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for Client in Clients %}
+                                            <tr id="client_list__item--{{ Client.id }}">
+                                                <td id="client_list__name--{{ Client.id }}">{{ Client.AppName }}</td>
+                                                <td id="client_list__menu_box--{{ Client.id }}" class="icon_edit">
+                                                    <div id="client_list__menu_box_toggle--{{ Client.id }}" class="dropdown">
+                                                        <a class="dropdown-toggle--{{ Client.id }}" data-toggle="dropdown" aria-expanded="false"><svg class="cb cb-ellipsis-h"> <use xlink:href="#cb-ellipsis-h" /></svg></a>
+                                                        <ul id="client_list__menu--{{ Client.id }}" class="dropdown-menu dropdown-menu-right">
+                                                            <li><a href="{{ url('admin_setting_system_client_edit', { 'member_id' : Member.id , 'client_id' : Client.id }) }}" >編集</a></li>
+                                                        </ul>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div><!-- /.box -->
+            <div id="client_list__footer" class="row">
+                <div id="client_list__insert_button" class="col-xs-10 col-xs-offset-1 col-sm-6 col-sm-offset-3 text-center btn_area">
+                    <a href="{{ url('admin_setting_system_client_new', {'member_id' : Member.id}) }}" class="btn btn-primary btn-block btn-lg">
+                        新規登録
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+{% endblock %}

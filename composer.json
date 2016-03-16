@@ -1,0 +1,10 @@
+{
+  "require": {
+    "gree/jose": "~2.1",
+    "phpseclib/phpseclib": "~2.0",
+    "firebase/php-jwt": "~2.2",
+    "bshaffer/oauth2-server-httpfoundation-bridge": "~1.1",
+    "bshaffer/oauth2-server-php": "~1.8",
+    "symfony/http-foundation": ">=2.7,<2.8"
+  }
+}
