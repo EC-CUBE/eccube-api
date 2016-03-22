@@ -107,9 +107,7 @@ class EccubeApiController extends AbstractApiController
             'label' => '表示件数',
             'allow_extra_fields' => true,
         ));
-        if ($request->getMethod() === 'GET') {
-            $builder->setMethod('GET');
-        }
+        $builder->setMethod('GET');
 
         $event = new EventArgs(
             array(
@@ -130,9 +128,7 @@ class EccubeApiController extends AbstractApiController
             'label' => '表示順',
             'allow_extra_fields' => true,
         ));
-        if ($request->getMethod() === 'GET') {
-            $builder->setMethod('GET');
-        }
+        $builder->setMethod('GET');
 
         $event = new EventArgs(
             array(
@@ -163,7 +159,7 @@ class EccubeApiController extends AbstractApiController
         }
 
         // Wrappered OAuth2 response
-        return $this->getWrapperedResponseBy($app, $results);
+        return $this->getWrapperedResponseBy($app, array('products' => $results));
     }
 
 }

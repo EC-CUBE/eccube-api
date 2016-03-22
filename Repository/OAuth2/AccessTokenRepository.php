@@ -34,11 +34,12 @@ class AccessTokenRepository extends EntityRepository implements AccessTokenInter
         $user = $this->_em->getRepository('Plugin\EccubeApi\Entity\OAuth2\User')
                             ->findOneBy(array('email' => $userEmail));
         $AccessToken = new \Plugin\EccubeApi\Entity\OAuth2\AccessToken();
+        $now = new \DateTime();
         $AccessToken->setPropertiesFromArray(array(
             'token'     => $oauthToken,
             'client'    => $client,
             'user'      => $user,
-            'expires'   => (new \DateTime())->setTimestamp($expires),
+            'expires'   => $now->setTimestamp($expires),
             'scope'     => $scope,
         ));
         $this->_em->persist($AccessToken);

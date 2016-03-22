@@ -10,7 +10,7 @@ Plugin\EccubeApi\Entity\OAuth2\User:
   fields:
     email:
       type:   string
-      length: 320
+      length: 255
       unique: true
     password:
       type:   string

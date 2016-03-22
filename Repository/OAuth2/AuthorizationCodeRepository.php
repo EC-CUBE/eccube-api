@@ -48,29 +48,30 @@ class AuthorizationCodeRepository extends EntityRepository implements Authorizat
                 array('code' => $code)
             );
 
+        $now = new \DateTime();
         if ($AuthorizationCode) {
             $AuthorizationCode->setPropertiesFromArray(
                 array(
-                    'code'           => $code,
-                    'client'         => $client,
-                    'user'           => $user,
-                    'redirect_uri'   => $redirectUri,
-                    'expires'        => (new \DateTime())->setTimestamp($expires),
-                    'scope'          => $scope,
-                    'id_token'       => $id_token,
+                    'code' => $code,
+                    'client' => $client,
+                    'user' => $user,
+                    'redirect_uri' => $redirectUri,
+                    'expires' => $now->setTimestamp($expires),
+                    'scope' => $scope,
+                    'id_token' => $id_token,
                 )
             );
         } else {
             $AuthorizationCode = new \Plugin\EccubeApi\Entity\OAuth2\AuthorizationCode();
             $AuthorizationCode->setPropertiesFromArray(
                 array(
-                    'code'           => $code,
-                    'client'         => $client,
-                    'user'           => $user,
-                    'redirect_uri'   => $redirectUri,
-                    'expires'        => (new \DateTime())->setTimestamp($expires),
-                    'scope'          => $scope,
-                    'id_token'       => $id_token,
+                    'code' => $code,
+                    'client' => $client,
+                    'user' => $user,
+                    'redirect_uri' => $redirectUri,
+                    'expires' => $now->setTimestamp($expires),
+                    'scope' => $scope,
+                    'id_token' => $id_token,
                 )
             );
             $this->_em->persist($AuthorizationCode);
