@@ -1,0 +1,4 @@
+eccube.event.app.request:
+  - [onAppRequest, NORMAL]
+eccube.event.app.response:
+  - [onAppResponse, NORMAL]

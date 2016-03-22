@@ -1,0 +1,73 @@
+swagger: '2.0'
+# This is your document metadata
+info:
+  version: "1"
+  title: EC-CUBE API
+  description: |
+    EC-CUBEで公開しているAPI一覧です。
+
+    使い方などはこちらをご覧ください。[here](https://ec-cube.github.io/api)
+# ドメイン名を入力
+host: localhost:8001
+basePath: /api/v1
+schemes:
+  - http
+  - https
+consumes:
+  - application/json
+produces:
+  - application/json
+# Describe your paths here
+paths:
+  # This is a path endpoint. Change it.
+  /products:
+    # This is a HTTP operation
+    get:
+      # Describe this verb here. Note: you can use markdown
+      description: 公開されている商品一覧を取得します。
+      # This is array of GET operation parameters:
+      parameters:
+        # An example parameter that is in query and is required
+        -
+          name: category_id
+          in: query
+          description: カテゴリーID
+          required: false
+          type: integer
+        -
+          name: name
+          in: query
+          description: 商品名
+          required: false
+          type: string
+        -
+          name: pageno
+          in: query
+          description: ページ番号
+          required: false
+          type: integer
+        -
+          name: disp_number
+          in: query
+          description: 表示件数
+          required: false
+          type: integer
+        -
+          name: orderby
+          in: query
+          description: 並び順
+          required: false
+          type: integer
+
+      # Expected responses for this operation:
+      responses:
+        # Response code
+        200:
+          description: Successful response
+          # A schema describing your response object.
+          # Use JSON Schema format
+          schema:
+            type: array
+            items:
+              title: product
+              type: object

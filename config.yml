@@ -1,0 +1,6 @@
+name: EccubeApi
+code: EccubeApi
+version: 1.0.0
+event: EccubeApiEvent
+service:
+    - EccubeApiServiceProvider
