@@ -2,3 +2,6 @@ eccube.event.app.request:
   - [onAppRequest, NORMAL]
 eccube.event.app.response:
   - [onAppResponse, NORMAL]
+eccube.event.route.admin_setting_system_member_edit.response:
+  - [onRouteAdminMemberResponse, NORMAL]
+

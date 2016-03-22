@@ -1,0 +1,26 @@
+Plugin\EccubeApi\Entity\OAuth2\OpenID\PublicKey:
+  type: entity
+  table: plg_oauth2_openid_public_key
+  repositoryClass:  Plugin\EccubeApi\Repository\OAuth2\OpenID\PublicKeyRepository
+  id:
+    id:
+      type:   integer
+      generator:
+        strategy: AUTO
+  fields:
+    public_key:
+      type:   string
+      length: 2000
+    private_key:
+      type:   string
+      length: 2000
+    encryption_algorithm:
+      type:   string
+      length: 100
+      default:    "RS256"
+  oneToOne:
+    UserInfo:
+      targetEntity: Plugin\EccubeApi\Entity\OAuth2\OpenID\UserInfo
+      joinColumn:
+        name:                 userinfo_id
+        referencedColumnName: id

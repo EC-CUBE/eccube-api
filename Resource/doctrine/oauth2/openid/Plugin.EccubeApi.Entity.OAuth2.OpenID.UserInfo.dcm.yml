@@ -1,0 +1,110 @@
+Plugin\EccubeApi\Entity\OAuth2\OpenID\UserInfo:
+  type: entity
+  table: plg_oauth2_openid_userinfo
+  repositoryClass:  Plugin\EccubeApi\Repository\OAuth2\OpenID\UserInfoRepository
+  id:
+    id:
+      type:   integer
+      generator:
+        strategy: AUTO
+  fields:
+    sub:
+        type: string
+        length: 255
+        unique: true
+        nullable: false
+    name:
+        type: string
+        length: 255
+        nullable: true
+    given_name:
+        type: string
+        length: 255
+        nullable: true
+    family_name:
+        type: string
+        length: 255
+        nullable: true
+    middle_name:
+        type: string
+        length: 255
+        nullable: true
+    nickname:
+        type: string
+        length: 255
+        nullable: true
+    preferred_username:
+        type: string
+        length: 255
+        nullable: true
+    profile:
+        type: string
+        length: 4000
+        nullable: true
+    picture:
+        type: string
+        length: 4000
+        nullable: true
+    website:
+        type: string
+        length: 4000
+        nullable: true
+    email:
+        type: string
+        length: 320
+        nullable: true
+    email_verified:
+        type: boolean
+        nullable: false
+        options:
+            default: false
+    gender:
+        type: string
+        length: 32
+        nullable: true
+    birthdate:
+        type: datetimetz
+        nullable: true
+    zoneinfo:
+        type: string
+        length: 128
+        nullable: true
+    locale:
+        type: string
+        length: 32
+        nullable: true
+    phone_number:
+        type: string
+        length: 128
+        nullable: true
+    phone_number_verified:
+        type: boolean
+        nullable: false
+        options:
+            default: false
+    updated_at:
+        type: datetimetz
+        nullable: false
+  indexes:
+    plg_oauth2_userinfo_email_index:
+      columns:
+          - email
+    plg_oauth2_userinfo_preferred_username_index:
+      columns:
+          - preferred_username
+  oneToOne:
+    address:
+      targetEntity: Plugin\EccubeApi\Entity\OAuth2\OpenID\UserInfoAddress
+      joinColumn:
+        name:                 address_id
+        referencedColumnName: id
+    Customer:
+      targetEntity: Eccube\Entity\Customer
+      joinColumn:
+        name:                 customer_id
+        referencedColumnName: customer_id
+    Member:
+      targetEntity: Eccube\Entity\Member
+      joinColumn:
+        name:                 member_id
+        referencedColumnName: member_id

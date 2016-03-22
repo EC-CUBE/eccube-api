@@ -1,0 +1,43 @@
+Plugin\EccubeApi\Entity\OAuth2\AuthorizationCode:
+  type:             entity
+  table:            plg_oauth2_authorization_code
+  repositoryClass:  Plugin\EccubeApi\Repository\OAuth2\AuthorizationCodeRepository
+  id:
+    id:
+      type:   integer
+      generator:
+        strategy: AUTO
+  fields:
+    code:
+      type:       string
+      length: 40
+      unique:     true
+    client_id:
+      type:       integer
+    user_id:
+      type:       integer
+      nullable:   true
+    expires:
+      type:       datetimetz
+    redirect_uri:
+      type:       string
+      length: 200
+    scope:
+      type:       string
+      length: 4000
+      nullable:   true
+    id_token:
+      type:       string
+      length: 1000
+      nullable:   true
+  manyToOne:
+    client:
+      targetEntity: Plugin\EccubeApi\Entity\OAuth2\Client
+      joinColumn:
+        name:                 client_id
+        referencedColumnName: id
+    user:
+      targetEntity: Plugin\EccubeApi\Entity\OAuth2\User
+      joinColumn:
+        name:                 user_id
+        referencedColumnName: id

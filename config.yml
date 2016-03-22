@@ -4,3 +4,8 @@ version: 1.0.0
 event: EccubeApiEvent
 service:
     - EccubeApiServiceProvider
+orm.path:
+    - /Resource/doctrine
+    - /Resource/doctrine/oauth2
+    - /Resource/doctrine/oauth2/openid
+

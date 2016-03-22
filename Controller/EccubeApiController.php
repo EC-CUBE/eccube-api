@@ -17,7 +17,7 @@ use Eccube\Event\EccubeEvents;
 use Eccube\Event\EventArgs;
 use Symfony\Component\HttpFoundation\Request;
 
-class EccubeApiController
+class EccubeApiController extends AbstractApiController
 {
 
     /**
@@ -29,6 +29,11 @@ class EccubeApiController
      */
     public function index(Application $app, Request $request)
     {
+        // OAuth2 Authorization
+        $scope_reuqired= 'read';
+        if (!$this->verifyRequest($app, $scope_reuqired)) {
+            return $app['oauth2.server.resource']->getResponse();
+        }
 
         $BaseInfo = $app['eccube.repository.base_info']->get();
 
@@ -157,8 +162,8 @@ class EccubeApiController
             );
         }
 
-        return $app->json($results);
-
+        // Wrappered OAuth2 response
+        return $this->getWrapperedResponseBy($app, $results);
     }
 
 }

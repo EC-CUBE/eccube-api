@@ -1,0 +1,30 @@
+{% extends 'default_frame.twig' %}
+
+{% block javascript %}
+    <script>
+    </script>
+{% endblock %}
+{% block main %}
+    <p>このアプリ連携を許可しますか？</p>
+    <p>このアプリは以下のアクセス権を要求しています:</p>
+    <ol>
+        <li>データの読込み</li>
+        <li>データの書込み</li>
+    </ol>
+
+    <form id="authorization_form" method="post" action="{{ url('oauth2_server_admin_authorize') }}{% if nonce|length %}?nonce={{ nonce }}{% endif %}">
+        {{ form_widget(form._token) }}
+        {{ form_widget(form.client_id) }}
+        {{ form_widget(form.redirect_uri) }}
+        {{ form_widget(form.response_type) }}
+        {{ form_widget(form.state) }}
+        {{ form_widget(form.scope) }}
+        {% if nonce|length %}
+            {{ form_widget(form.nonce) }}
+        {% endif %}
+        {{ form_widget(form.authorized) }}
+        <input type="button" onclick="document.forms.authorization_form.authorized.value = 1; document.forms.authorization_form.submit();" value="許可する" />
+        <input type="button" onclick="document.forms.authorization_form.authorized.value = 0; document.forms.authorization_form.submit();" value="拒否する" />
+    </form>
+
+{% endblock %}
