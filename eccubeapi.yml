@@ -8,7 +8,7 @@ info:
 
     使い方などはこちらをご覧ください。[here](https://ec-cube.github.io/api)
 # ドメイン名を入力
-host: localhost:8001
+host: 192.168.56.101:8081
 basePath: /api/v1
 schemes:
   - http
@@ -17,6 +17,12 @@ consumes:
   - application/json
 produces:
   - application/json
+security:
+  - eccubeOAuth2Implicit:
+    - read
+    - write
+    - openid
+    - offline_access
 # Describe your paths here
 paths:
   # This is a path endpoint. Change it.
@@ -71,3 +77,13 @@ paths:
             items:
               title: product
               type: object
+securityDefinitions:
+  eccubeOAuth2Implicit:
+    type: oauth2
+    scopes:
+      read: Grants read access to objects.
+      write: Grants writes access to objects.
+      openid: OpenID Connect Authorization supports.
+      offline_access: OpenID Connect offline access supports.
+    flow: implicit
+    authorizationUrl: http://192.168.56.101:8081/admin/OAuth2/v1/authorize

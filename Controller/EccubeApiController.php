@@ -16,6 +16,7 @@ use Eccube\Common\Constant;
 use Eccube\Event\EccubeEvents;
 use Eccube\Event\EventArgs;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class EccubeApiController extends AbstractApiController
 {
@@ -29,6 +30,9 @@ class EccubeApiController extends AbstractApiController
      */
     public function index(Application $app, Request $request)
     {
+        if ($request->getMethod() === "OPTIONS") {
+            return new Response();
+        }
         // OAuth2 Authorization
         $scope_reuqired= 'read';
         if (!$this->verifyRequest($app, $scope_reuqired)) {
@@ -162,4 +166,34 @@ class EccubeApiController extends AbstractApiController
         return $this->getWrapperedResponseBy($app, array('products' => $results));
     }
 
+    public function swagger(Application $app, Request $request)
+    {
+        $yml = file_get_contents(__DIR__.'/../eccubeapi.yml');
+        $Response = new Response();
+        $Response->setContent($yml);
+        return $Response;
+    }
+
+    public function swaggerUI(Application $app, Request $request)
+    {
+        $swagger = file_get_contents(__DIR__.'/../Resource/swagger-ui/index.html');
+        $swagger = str_replace('your-client-id', htmlspecialchars($request->get('client_id'), ENT_QUOTES), $swagger);
+        $swagger = str_replace('scopeSeparator: ","', 'scopeSeparator: " "', $swagger);
+        $swagger = str_replace('http://petstore.swagger.io/v2/swagger.json', $app->url('swagger_yml'), $swagger);
+        $swagger = preg_replace('/src=\'(.*)\'(.*)/', 'src=\'/plugin/api/swagger-ui/${1}\'${2}', $swagger);
+        $swagger = preg_replace('/src="(.*)"(.*)/', 'src="/plugin/api/swagger-ui/${1}"${2}', $swagger);
+        $swagger = preg_replace('/link href=\'(.*)\'(.*)/', 'link href=\'/plugin/api/swagger-ui/${1}\'${2}', $swagger);
+
+        $Response = new Response();
+        $Response->setContent($swagger);
+        return $Response;
+    }
+
+    public function swaggerO2c(Application $app, Request $request)
+    {
+        $swagger = file_get_contents(__DIR__.'/../Resource/swagger-ui/o2c.html');
+        $Response = new Response();
+        $Response->setContent($swagger);
+        return $Response;
+    }
 }

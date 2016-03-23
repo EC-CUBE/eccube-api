@@ -62,7 +62,6 @@ class EccubeApiServiceProvider implements ServiceProviderInterface
             return array_replace_recursive($conf, $confarray);
         });
 
-
         // ログファイル設定
         $app['monolog.EccubeApi'] = $app->share(function ($app) {
 
@@ -91,9 +90,15 @@ class EccubeApiServiceProvider implements ServiceProviderInterface
 
         $c = $app['controllers_factory'];
 
-        $c->get('/products', 'Plugin\EccubeApi\Controller\EccubeApiController::index')->bind('plugin_EccubeApi_products');
-
+        $c->match('/products', 'Plugin\EccubeApi\Controller\EccubeApiController::index')->bind('plugin_EccubeApi_products');
         $app->mount($app['config']['api.endpoint'].'/'.$app['config']['api.version'], $c);
+
+        // Swagger 関連
+        $s = $app['controllers_factory'];
+        $s->match('/eccubeapi.yml', 'Plugin\EccubeApi\Controller\EccubeApiController::swagger')->bind('swagger_yml');
+        $s->match('/api-doc', 'Plugin\EccubeApi\Controller\EccubeApiController::swaggerUI')->bind('swagger_ui');
+        $s->match('/o2c.html', 'Plugin\EccubeApi\Controller\EccubeApiController::swaggerO2c')->bind('swagger_o2c');
+        $app->mount('/'.$app['config']['api.endpoint'], $s);
 
         // 認証関連
         $ep = $app['controllers_factory'];

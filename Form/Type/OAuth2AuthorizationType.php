@@ -47,7 +47,7 @@ class OAuth2AuthorizationType extends AbstractType
             ))
             ->add('nonce', 'hidden', array(
                 'constraints' => array(
-                    new Assert\NotBlank(),
+                    // new Assert\NotBlank(),
                 ),
             ))
             ->add('authorized', 'hidden', array(

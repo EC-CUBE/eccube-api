@@ -17,6 +17,15 @@ use Symfony\Component\Filesystem\Filesystem;
 class PluginManager extends AbstractPluginManager
 {
     /**
+     * @var string コピー元リソースディレクトリ
+     */
+    private $origin;
+    /**
+     * @var string コピー先リソースディレクトリ
+     */
+    private $target;
+
+    /**
      * @var array エンティティクラスの配列
      */
     private $classes;
@@ -34,6 +43,10 @@ class PluginManager extends AbstractPluginManager
             '\Plugin\EccubeApi\Entity\OAuth2\AccessToken',
             '\Plugin\EccubeApi\Entity\OAuth2\Client'
         );
+        // コピー元のディレクトリ
+        $this->origin = __DIR__.'/Resource/swagger-ui';
+        // XXX html のパスを動的に取得したい
+        $this->target = __DIR__.'/../../../html/plugin/api/swagger-ui';
     }
 
     /**
@@ -45,6 +58,8 @@ class PluginManager extends AbstractPluginManager
      */
     public function install($config, $app)
     {
+        // リソースファイルのコピー
+        $this->copyAssets();
     }
 
     /**
@@ -56,6 +71,8 @@ class PluginManager extends AbstractPluginManager
     public function uninstall($config, $app)
     {
         $this->migrationSchema($app, __DIR__.'/Resource/doctrine/migrations', $config['code'], 0);
+        // リソースファイルの削除
+        $this->removeAssets();
     }
 
     /**
@@ -82,5 +99,22 @@ class PluginManager extends AbstractPluginManager
 
     public function update($config, $app)
     {
+    }
+
+    /**
+     * リソースファイル等をコピー
+     */
+    private function copyAssets()
+    {
+        $file = new Filesystem();
+        $file->mirror($this->origin, $this->target);
+    }
+    /**
+     * コピーしたリソースファイルなどを削除
+     */
+    private function removeAssets()
+    {
+        $file = new Filesystem();
+        $file->remove($this->target);
     }
 }

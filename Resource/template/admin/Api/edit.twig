@@ -30,14 +30,40 @@
                         {{ form_row(form.scope) }}
                         {{ form_row(form.public_key) }}
                         {{ form_row(form.encryption_algorithm) }}
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label" for="admin_api_endpoint_authorization">authorization エンドポイント</label>
+                            <div class="col-sm-10">
+                                <p>{{ url('oauth2_server_admin_authorize') }}</p>
+                            </div>
+                        </div>
 
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label" for="admin_api_endpoint_token">token エンドポイント</label>
+                            <div class="col-sm-10">
+                                <p>{{ url('oauth2_server_token') }}</p>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label" for="admin_api_endpoint_tokeninfo">tokeninfo エンドポイント</label>
+                            <div class="col-sm-10">
+                                <p>{{ url('oauth2_server_tokeninfo') }}?id_token=&lt;your id_token&gt;</p>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label" for="admin_api_client_apidoc">APIドキュメント</label>
+                            <div class="col-sm-10">
+                                <a href="{{ url('swagger_ui') }}?client_id={{ Client.client_identifier }}" target="_blank">APIドキュメントを開く</a>
+                                <p>APIドキュメントで OAuth2認証を使用する場合は redirect_uri に {{ url('swagger_o2c') }} を指定してください。</p>
+                            </div>
+                        </div>
                     </div><!-- /.box-body -->
                 </form>
             </div><!-- /.box -->
 
             <div id="detail_box__footer" class="row">
                 <div id="detail_box__back_button" class="col-xs-10 col-xs-offset-1 col-sm-6 col-sm-offset-3 text-center btn_area">
-                    <p><a href="{{ url('admin_setting_system_member') }}">戻る</a></p>
+                    <p><a href="{{ url('admin_api_lists', {'member_id' : Member.id}) }}">戻る</a></p>
                 </div>
             </div>
 

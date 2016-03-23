@@ -40,11 +40,11 @@ class EccubeApiEvent
         $request = $event->getRequest();
         if ($request->getMethod() === "OPTIONS") {
             $response = new Response();
+            // https://developer.mozilla.org/ja/docs/HTTP_access_control#Requests_with_credentials
             $response->headers->set("Access-Control-Allow-Origin","*");
             $response->headers->set("Access-Control-Allow-Methods","GET,POST,PUT,DELETE,OPTIONS");
             $response->headers->set("Access-Control-Allow-Headers","Content-Type");
-            $response->setStatusCode(200);
-            $response->send();
+            $response->setStatusCode(204);
         }
 
         //accepting JSON
@@ -64,6 +64,7 @@ class EccubeApiEvent
         $response = $event->getResponse();
         $response->headers->set("Access-Control-Allow-Origin","*");
         $response->headers->set("Access-Control-Allow-Methods","GET,POST,PUT,DELETE,OPTIONS");
+        $response->headers->set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
     }
 
     /**
