@@ -169,6 +169,8 @@ class EccubeApiController extends AbstractApiController
     public function swagger(Application $app, Request $request)
     {
         $yml = file_get_contents(__DIR__.'/../eccubeapi.yml');
+        $yml = str_replace('https://<your-host-name>', rtrim($app->url('homepage'), '/'), $yml);
+        $yml = str_replace('<your-host-name>', $_SERVER['HTTP_HOST'], $yml);
         $Response = new Response();
         $Response->setContent($yml);
         return $Response;

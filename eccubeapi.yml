@@ -8,7 +8,7 @@ info:
 
     使い方などはこちらをご覧ください。[here](https://ec-cube.github.io/api)
 # ドメイン名を入力
-host: 192.168.56.101:8081
+host: <your-host-name>
 basePath: /api/v1
 schemes:
   - http
@@ -86,4 +86,4 @@ securityDefinitions:
       openid: OpenID Connect Authorization supports.
       offline_access: OpenID Connect offline access supports.
     flow: implicit
-    authorizationUrl: http://192.168.56.101:8081/admin/OAuth2/v1/authorize
+    authorizationUrl: https://<your-host-name>/admin/OAuth2/v1/authorize
