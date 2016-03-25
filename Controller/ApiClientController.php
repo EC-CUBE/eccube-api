@@ -12,12 +12,10 @@ class ApiClientController
     const DEFAULT_SCOPE = 'read write openid offline_access';
     const DEFAULT_ENCRYPTION_ALGORITHM = 'RS256';
 
-    PUBLIC function lists(Application $app, Request $request, $member_id = null)
+    public function lists(Application $app, Request $request, $member_id = null)
     {
-        $entityManager = $app['orm.em'];
-        $clientStorage  = $entityManager->getRepository('Plugin\EccubeApi\Entity\OAuth2\Client');
         $Member = $app['eccube.repository.member']->find($member_id);
-        $Clients = $clientStorage->findBy(array('Member' => $Member));
+        $Clients = $app['eccube.repository.oauth2.client']->findBy(array('Member' => $Member));
 
         $builder = $app['form.factory']->createBuilder();
         $form = $builder->getForm();
@@ -31,25 +29,20 @@ class ApiClientController
 
     public function edit(Application $app, Request $request, $member_id = null, $client_id = null)
     {
-        $entityManager = $app['orm.em'];
-        $clientStorage  = $entityManager->getRepository('Plugin\EccubeApi\Entity\OAuth2\Client');
-        $keyStorage = $entityManager->getRepository('Plugin\EccubeApi\Entity\OAuth2\OpenID\PublicKey');
-        $userStorage = $entityManager->getRepository('Plugin\EccubeApi\Entity\OAuth2\OpenID\UserInfo');
-
         $Member = $app['eccube.repository.member']->find($member_id);
-        $Client = $clientStorage->find($client_id);
+        $Client = $app['eccube.repository.oauth2.client']->find($client_id);
         $userInfoConditions = array();
         if ($Client->hasMember()) {
             $userInfoConditions = array('Member' => $Client->getMember());
         } elseif ($Client->hasCustomer()) {
             $userInfoConditions = array('Customer' => $Client->getCustomer());
         }
-        $UserInfo = $userStorage->findOneBy($userInfoConditions);
-        $PublicKey = $keyStorage->findOneBy(array('UserInfo' => $UserInfo));
+        $UserInfo = $app['eccube.repository.oauth2.openid.userinfo']->findOneBy($userInfoConditions);
+        $PublicKey = $app['eccube.repository.oauth2.openid.public_key']->findOneBy(array('UserInfo' => $UserInfo));
 
         $builder = $app['form.factory']->createBuilder('admin_api_client', $Client);
         $form = $builder->getForm();
-        $form['scope']->setData('read write openid offline_access'); // TODO
+        $form['scope']->setData(self::DEFAULT_SCOPE); // TODO
         if ($PublicKey) {
             $form['public_key']->setData($PublicKey->getPublicKey());
             $form['encryption_algorithm']->setData($PublicKey->getEncryptionAlgorithm());
@@ -80,26 +73,23 @@ class ApiClientController
 
     public function newClient(Application $app, Request $request, $member_id = null)
     {
-        $entityManager = $app['orm.em'];
-        $userStorage = $entityManager->getRepository('Plugin\EccubeApi\Entity\OAuth2\OpenID\UserInfo');
-        $keyStorage = $entityManager->getRepository('Plugin\EccubeApi\Entity\OAuth2\OpenID\PublicKey');
-
         $Member = $app['eccube.repository.member']->find($member_id);
         $Client = new \Plugin\EccubeApi\Entity\OAuth2\Client();
 
         $builder = $app['form.factory']->createBuilder('admin_api_client', $Client);
         $form = $builder->getForm();
-        $form['scope']->setData(self::DEFAULT_SCOPE);
+        $form['scope']->setData(self::DEFAULT_SCOPE); // TODO
         $form['encryption_algorithm']->setData(self::DEFAULT_ENCRYPTION_ALGORITHM);
 
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
             $PublicKey = null;
-            $UserInfo = $userStorage->findOneBy(array('Member' => $Member));
+            $UserInfo = $app['eccube.repository.oauth2.openid.userinfo']->findOneBy(array('Member' => $Member));
             if (!is_object($UserInfo)) {
                 $UserInfo = new \Plugin\EccubeApi\Entity\OAuth2\OpenID\UserInfo();
+                $UserInfoAdderss = new \Plugin\EccubeApi\Entity\OAuth2\OpenID\UserInfoAddress();
             } else {
-                $PublicKey = $keyStorage->findOneBy(array('UserInfo' => $UserInfo));
+                $PublicKey = $app['eccube.repository.oauth2.openid.public_key']->findOneBy(array('UserInfo' => $UserInfo));
             }
 
             $client_id = sha1(openssl_random_pseudo_bytes(100));
@@ -137,10 +127,11 @@ class ApiClientController
 
             $UserInfo->setPreferredUsername($Member->getUsername());
             $UserInfo->setMember($Member);
-            $UserInfoAdderss = new \Plugin\EccubeApi\Entity\OAuth2\OpenID\UserInfoAddress();
-            $app['orm.em']->persist($UserInfoAdderss);
-            $app['orm.em']->flush($UserInfoAdderss);
-            $UserInfo->setAddress($UserInfoAdderss);
+            if (!is_object($UserInfo->getAddress())) {
+                $app['orm.em']->persist($UserInfoAdderss);
+                $app['orm.em']->flush($UserInfoAdderss);
+                $UserInfo->setAddress($UserInfoAdderss);
+            }
             $UserInfo->setUpdatedAt(new \DateTime());
             $app['orm.em']->persist($UserInfo);
             if ($is_new_public_key) {
