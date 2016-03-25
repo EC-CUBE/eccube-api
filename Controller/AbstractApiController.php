@@ -17,10 +17,14 @@ abstract class AbstractApiController
         );
     }
 
-    protected function getWrapperedResponseBy(Application $app, $data)
+    protected function getWrapperedResponseBy(Application $app, $data, $statusCode = 200)
     {
         $Response = $app['oauth2.server.resource']->getResponse();
+        if (!is_object($Response)) {
+            return $app->json($data, $statusCode);
+        }
         $Response->setData($data);
+        $Response->setStatusCode($statusCode);
         return $Response;
     }
 }
