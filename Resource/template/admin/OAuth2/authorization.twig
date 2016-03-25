@@ -2,14 +2,33 @@
 
 {% block javascript %}
     <script>
+        $(function() {
+            var $permissions = $('#permissions');
+            var scopes = {{ scopeAsJson|raw }};
+            for (var i = 0; i < scopes.length; i++) {
+                switch(scopes[i]) {
+                    case 'read':
+                        $permissions.append('<li>データの読込み</li>');
+                        break;
+                    case 'write':
+                        $permissions.append('<li>データの書込み</li>');
+                        break;
+                    case 'openid':
+                        $permissions.append('<li>OpenID 認証</li>');
+                        break;
+                    case 'offline_access':
+                        $permissions.append('<li>オフラインアクセス</li>');
+                        break;
+                    default:
+                }
+            }
+        });
     </script>
 {% endblock %}
 {% block main %}
     <p>このアプリ連携を許可しますか？</p>
     <p>このアプリは以下のアクセス権を要求しています:</p>
-    <ol>
-        <li>データの読込み</li>
-        <li>データの書込み</li>
+    <ol id="permissions">
     </ol>
 
     <form id="authorization_form" method="post" action="{{ url('oauth2_server_admin_authorize') }}{% if nonce|length %}?nonce={{ nonce }}{% endif %}">

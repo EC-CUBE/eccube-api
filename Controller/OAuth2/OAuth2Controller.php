@@ -72,6 +72,11 @@ class OAuth2Controller
             return $server->handleAuthorizeRequest($BridgeRequest, $Response, $is_authorized, $user_id);
         }
 
+        $scopes = array();
+        if (!is_null($scope)) {
+            $scopes = explode(' ', $scope);
+        }
+
         return $app->render(
             'EccubeApi/Resource/template/admin/OAuth2/authorization.twig',
             array(
@@ -80,6 +85,7 @@ class OAuth2Controller
                 'response_type' => $response_type,
                 'state' => $state,
                 'scope' => $scope,
+                'scopeAsJson' => json_encode($scopes),
                 'nonce' => $nonce,
                 'form' => $form->createView()
             )
