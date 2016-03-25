@@ -21,6 +21,17 @@ security:
   - eccubeOAuth2Implicit:
     - read
     - write
+  - eccubeOAuth2AuthorizationCode:
+    - read
+    - write
+  - eccubeOpenIDConnectImplicit:
+    - read
+    - write
+    - openid
+    - offline_access
+  - eccubeOpenIDConnectAuthorizationCode:
+    - read
+    - write
     - openid
     - offline_access
 # Describe your paths here
@@ -80,10 +91,39 @@ paths:
 securityDefinitions:
   eccubeOAuth2Implicit:
     type: oauth2
+    description: OAuth2.0 Authentication using the Implicit Flow. for JavaScript, native application.
     scopes:
       read: Grants read access to objects.
       write: Grants writes access to objects.
-      openid: OpenID Connect Authorization supports.
+    flow: implicit
+    authorizationUrl: https://<your-host-name>/admin/OAuth2/v1/authorize
+  eccubeOAuth2AuthorizationCode:
+    type: oauth2
+    description: OAuth2.0 Authentication using the Authorization Code Flow.
+    scopes:
+      read: Grants read access to objects.
+      write: Grants writes access to objects.
+    flow: accessCode
+    authorizationUrl: https://<your-host-name>/admin/OAuth2/v1/authorize
+    tokenUrl: https://<your-host-name>/admin/OAuth2/v1/token
+  eccubeOpenIDConnectImplicit:
+    type: oauth2
+    description: OpenID Connect Authentication using the Implicit Flow.
+    scopes:
+      read: Grants read access to objects.
+      write: Grants writes access to objects.
+      openid: Required. OpenID Connect Authorization supports.
       offline_access: OpenID Connect offline access supports.
     flow: implicit
     authorizationUrl: https://<your-host-name>/admin/OAuth2/v1/authorize
+  eccubeOpenIDConnectAuthorizationCode:
+    type: oauth2
+    description: OpenID Connect Authentication using the Authorization Code Flow.
+    scopes:
+      read: Grants read access to objects.
+      write: Grants writes access to objects.
+      openid: Required. OpenID Connect Authorization supports.
+      offline_access: OpenID Connect offline access supports.
+    flow: accessCode
+    authorizationUrl: https://<your-host-name>/admin/OAuth2/v1/authorize
+    tokenUrl: https://<your-host-name>/admin/OAuth2/v1/token
