@@ -171,6 +171,7 @@ class EccubeApiController extends AbstractApiController
         $yml = file_get_contents(__DIR__.'/../eccubeapi.yml');
         $yml = str_replace('https://<your-host-name>', rtrim($app->url('homepage'), '/'), $yml);
         $yml = str_replace('<your-host-name>', $_SERVER['HTTP_HOST'], $yml);
+        $yml = str_replace('<admin_dir>', rtrim($app['config']['admin_dir'], '/'), $yml);
         $Response = new Response();
         $Response->setContent($yml);
         return $Response;
