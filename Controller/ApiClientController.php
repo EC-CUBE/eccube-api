@@ -60,6 +60,7 @@ class ApiClientController
         if ($form->isSubmitted() && $form->isValid()) {
 
             $app['orm.em']->flush($Client);
+            $app->addSuccess('admin.register.complete', 'admin');
             return $app->redirect(
                 $app->url('admin_setting_system_client_edit',
                           array(
@@ -97,6 +98,7 @@ class ApiClientController
             $UserInfo = $userStorage->findOneBy(array('Member' => $Member));
             if (!is_object($UserInfo)) {
                 $UserInfo = new \Plugin\EccubeApi\Entity\OAuth2\OpenID\UserInfo();
+            } else {
                 $PublicKey = $keyStorage->findOneBy(array('UserInfo' => $UserInfo));
             }
 
@@ -108,7 +110,9 @@ class ApiClientController
             $Client->setMember($Member);
             $app['orm.em']->persist($Client);
 
+            $is_new_public_key = false;
             if (!is_object($PublicKey)) {
+                $is_new_public_key = true;
                 $configures = array(
                     'digest_alg' => 'sha256',
                     'private_key_bits' => 2048,
@@ -139,9 +143,12 @@ class ApiClientController
             $UserInfo->setAddress($UserInfoAdderss);
             $UserInfo->setUpdatedAt(new \DateTime());
             $app['orm.em']->persist($UserInfo);
-            $app['orm.em']->persist($PublicKey);
+            if ($is_new_public_key) {
+                $app['orm.em']->persist($PublicKey);
+            }
 
             $app['orm.em']->flush();
+            $app->addSuccess('admin.register.complete', 'admin');
             return $app->redirect(
                 $app->url('admin_setting_system_client_edit',
                           array(
