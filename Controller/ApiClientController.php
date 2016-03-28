@@ -102,25 +102,16 @@ class ApiClientController
 
             $is_new_public_key = false;
             if (!is_object($PublicKey)) {
+                $RSAKey = new \phpseclib\Crypt\RSA();
                 $is_new_public_key = true;
-                $configures = array(
-                    'digest_alg' => 'sha256',
-                    'private_key_bits' => 2048,
-                    'private_key_type' => OPENSSL_KEYTYPE_RSA
-                );
-                $openssl = openssl_pkey_new($configures);
-                openssl_pkey_export($openssl, $privKey, null, $configures);
-
-                $pubKey = openssl_pkey_get_details($openssl);
-
+                $keys = $RSAKey->createKey(2048);
                 $PublicKey = new \Plugin\EccubeApi\Entity\OAuth2\OpenID\PublicKey();
-                $PublicKey->setPublicKey($pubKey['key']);
-                $PublicKey->setPrivateKey($privKey);
+                $PublicKey->setPublicKey($keys['publickey']);
+                $PublicKey->setPrivateKey($keys['privatekey']);
                 $PublicKey->setEncryptionAlgorithm($form['encryption_algorithm']->getData());
                 $PublicKey->setUserInfo($UserInfo);
 
-                $RSAKey = new \phpseclib\Crypt\RSA();
-                $RSAKey->loadKey($pubKey['key']);
+                $RSAKey->loadKey($keys['publickey']);
                 $JWK = \JOSE_JWK::encode($RSAKey);
                 $UserInfo->setSub($JWK->thumbprint());
             }
