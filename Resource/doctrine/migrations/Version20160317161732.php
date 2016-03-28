@@ -77,10 +77,7 @@ class Version20160317161732 extends AbstractMigration
             'plg_oauth2_scope'
         );
         foreach ($tables as $table) {
-            $sql = 'DROP TABLE '.$table;
-            $stmt = $this->connection->prepare($sql);
-            $stmt->execute();
-            $stmt->closeCursor();
+            $schema->dropTable($table);
         }
 
         if ($this->connection->getDatabasePlatform()->getName() == "postgresql") {
@@ -96,10 +93,7 @@ class Version20160317161732 extends AbstractMigration
                 'plg_oauth2_user_id_seq'
             );
             foreach ($sequences as $sequence) {
-                $sql = 'DROP SEQUENCE '.$sequence;
-                $stmt = $this->connection->prepare($sql);
-                $stmt->execute();
-                $stmt->closeCursor();
+                $schema->dropSequence($sequence);
             }
         }
     }
