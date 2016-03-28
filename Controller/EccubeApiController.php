@@ -182,7 +182,7 @@ class EccubeApiController extends AbstractApiController
         $swagger = file_get_contents(__DIR__.'/../Resource/swagger-ui/index.html');
         $swagger = str_replace('your-client-id', htmlspecialchars($request->get('client_id'), ENT_QUOTES), $swagger);
         $swagger = str_replace('scopeSeparator: ","', 'scopeSeparator: " "', $swagger);
-        $swagger = str_replace('http://petstore.swagger.io/v2/swagger.json', $app->url('swagger_yml'), $swagger);
+        $swagger = str_replace('url = "http://petstore.swagger.io/v2/swagger.json";', 'url = "'.$app->url('swagger_yml').'"; window.oAuthRedirectUrl="'.$app->url('swagger_o2c').'";', $swagger);
         $swagger = preg_replace('/src=\'(.*)\'(.*)/', 'src=\'/plugin/api/swagger-ui/${1}\'${2}', $swagger);
         $swagger = preg_replace('/src="(.*)"(.*)/', 'src="/plugin/api/swagger-ui/${1}"${2}', $swagger);
         $swagger = preg_replace('/link href=\'(.*)\'(.*)/', 'link href=\'/plugin/api/swagger-ui/${1}\'${2}', $swagger);
