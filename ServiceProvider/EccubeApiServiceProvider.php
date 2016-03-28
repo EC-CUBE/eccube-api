@@ -95,9 +95,9 @@ class EccubeApiServiceProvider implements ServiceProviderInterface
 
         // Swagger 関連
         $s = $app['controllers_factory'];
-        $s->match('/eccubeapi.yml', 'Plugin\EccubeApi\Controller\EccubeApiController::swagger')->bind('swagger_yml');
+        $s->match('/specification', 'Plugin\EccubeApi\Controller\EccubeApiController::swagger')->bind('swagger_yml');
         $s->match('/api-doc', 'Plugin\EccubeApi\Controller\EccubeApiController::swaggerUI')->bind('swagger_ui');
-        $s->match('/o2c.html', 'Plugin\EccubeApi\Controller\EccubeApiController::swaggerO2c')->bind('swagger_o2c');
+        $s->match('/o2c', 'Plugin\EccubeApi\Controller\EccubeApiController::swaggerO2c')->bind('swagger_o2c');
         $app->mount('/'.$app['config']['api.endpoint'], $s);
 
         // 認証関連
