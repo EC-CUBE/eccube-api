@@ -4,6 +4,7 @@ namespace Plugin\EccubeApi\Controller\OAuth2;
 
 use Eccube\Application;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use OAuth2\HttpFoundationBridge\Response as BridgeResponse;
 use OAuth2\Encryption\FirebaseJwt as Jwt;
 
@@ -69,7 +70,20 @@ class OAuth2Controller
             }
 
             // handle the request
-            return $server->handleAuthorizeRequest($BridgeRequest, $Response, $is_authorized, $user_id);
+            $Response = $server->handleAuthorizeRequest($BridgeRequest, $Response, $is_authorized, $user_id);
+            if ($BridgeRequest->get('redirect_uri') == 'urn:ietf:wg:oauth:2.0:oob' && empty(json_decode($Response->getContent(), true))) {
+                $ResponseType = $server->getResponseType('code');
+                $res = $ResponseType->getAuthorizeResponse(
+                    array(
+                        'redirect_uri' => 'urn:ietf:wg:oauth:2.0:oob',
+                        'client_id' => $client_id,
+                        'state' => $state,
+                        'scope' => $scope
+                    ),
+                    $user_id);
+                return $app->redirect($app->url('oauth2_server_admin_authorize_oob', array('code' => $res[1]['query']['code'])));
+            }
+            return $Response;
         }
 
         $scopes = array();
@@ -89,6 +103,21 @@ class OAuth2Controller
                 'nonce' => $nonce,
                 'form' => $form->createView()
             )
+        );
+    }
+
+    public function authorizeOob(Application $app, Request $request, $code = null)
+    {
+        if ($code === null) {
+            throw new NotFoundHttpException();
+        }
+        $AuthorizationCode = $app['eccube.repository.oauth2.authorization_code']->findOneBy(array('code' => $code));
+        if (!is_object($AuthorizationCode)) {
+            throw new NotFoundHttpException();
+        }
+        return $app->render(
+            'EccubeApi/Resource/template/admin/OAuth2/authorization_code.twig',
+            array('code' => $code)
         );
     }
 
