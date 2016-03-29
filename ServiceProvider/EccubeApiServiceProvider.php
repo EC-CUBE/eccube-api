@@ -105,6 +105,7 @@ class EccubeApiServiceProvider implements ServiceProviderInterface
         $ep->match('/OAuth2/'.$app['config']['api.version'].'/token', 'Plugin\EccubeApi\Controller\OAuth2\OAuth2Controller::token')->bind('oauth2_server_token');
         $ep->match('/OAuth2/'.$app['config']['api.version'].'/tokeninfo', 'Plugin\EccubeApi\Controller\OAuth2\OAuth2Controller::tokeninfo')->bind('oauth2_server_tokeninfo');
         $ep->match('/'.trim($app['config']['admin_route'], '/').'/OAuth2/'.$app['config']['api.version'].'/authorize', 'Plugin\EccubeApi\Controller\OAuth2\OAuth2Controller::authorize')->bind('oauth2_server_admin_authorize');
+        $ep->match('/'.trim($app['config']['admin_route'], '/').'/OAuth2/'.$app['config']['api.version'].'/authorize/{code}', 'Plugin\EccubeApi\Controller\OAuth2\OAuth2Controller::authorizeOob')->assert('code', '\w+')->bind('oauth2_server_admin_authorize_oob');
         $app->mount('/', $ep);
 
         // APIクライアント設定画面
