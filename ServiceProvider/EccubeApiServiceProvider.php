@@ -85,18 +85,18 @@ class EccubeApiServiceProvider implements ServiceProviderInterface
         });
 
 
-        // プラグイン用設定画面
-        // $app->match('/' . $app['config']['admin_route'] . '/plugin/EccubeApi/config', 'Plugin\EccubeApi\Controller\ConfigController::index')->bind('plugin_EccubeApi_config');
+        // roting
 
+        // api
         $c = $app['controllers_factory'];
-
-        $c->match('/products', 'Plugin\EccubeApi\Controller\EccubeApiController::index')->bind('plugin_EccubeApi_products');
+        $c->match('/products', 'Plugin\EccubeApi\Controller\EccubeApiController::products')->bind('api_products');
+        $c->get('/products/{id}', 'Plugin\EccubeApi\Controller\EccubeApiController::productsDetail')->bind('api_products_detail')->assert('id', '\d+');
         $app->mount($app['config']['api.endpoint'].'/'.$app['config']['api.version'], $c);
 
         // Swagger 関連
         $s = $app['controllers_factory'];
-        $s->match('/specification', 'Plugin\EccubeApi\Controller\EccubeApiController::swagger')->bind('swagger_yml');
-        $s->match('/api-doc', 'Plugin\EccubeApi\Controller\EccubeApiController::swaggerUI')->bind('swagger_ui');
+        $s->match('/swagger-ui', 'Plugin\EccubeApi\Controller\EccubeApiController::swaggerUI')->bind('swagger_ui');
+        $s->match('/api-docs', 'Plugin\EccubeApi\Controller\EccubeApiController::swagger')->bind('swagger_yml');
         $s->match('/o2c', 'Plugin\EccubeApi\Controller\EccubeApiController::swaggerO2c')->bind('swagger_o2c');
         $app->mount('/'.$app['config']['api.endpoint'], $s);
 

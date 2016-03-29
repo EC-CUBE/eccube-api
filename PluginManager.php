@@ -46,7 +46,7 @@ class PluginManager extends AbstractPluginManager
         // コピー元のディレクトリ
         $this->origin = __DIR__.'/Resource/swagger-ui';
         // XXX html のパスを動的に取得したい
-        $this->target = __DIR__.'/../../../html/plugin/api/swagger-ui';
+        $this->target = __DIR__.'/../../../html/plugin/api';
     }
 
     /**
@@ -84,7 +84,7 @@ class PluginManager extends AbstractPluginManager
      */
     public function enable($config, $app)
     {
-        $this->migrationSchema($app, __DIR__.'/Resource/doctrine/migrations', $config['code']); // XXX install 時点では namespace を見つけられないため
+        $this->migrationSchema($app, __DIR__.'/Resource/doctrine/migrations', $config['code']);
     }
 
     /**
@@ -107,8 +107,11 @@ class PluginManager extends AbstractPluginManager
     private function copyAssets()
     {
         $file = new Filesystem();
-        $file->mirror($this->origin, $this->target);
+        $file->mirror($this->origin, $this->target.'/assets', null, array('override' => true));
+        $file->remove($this->target.'/assets/index.html');
+        $file->remove($this->target.'/assets/o2c.html');
     }
+
     /**
      * コピーしたリソースファイルなどを削除
      */
