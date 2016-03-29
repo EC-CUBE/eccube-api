@@ -49,11 +49,12 @@ class RefreshTokenRepository extends EntityRepository implements RefreshTokenInt
                 array('email' => $userEmail)
             );
         $RefreshToken = new \Plugin\EccubeApi\Entity\OAuth2\RefreshToken();
+        $now = new \DateTime();
         $RefreshToken->setPropertiesFromArray(array(
            'refresh_token'  => $refreshToken,
            'client'         => $client,
            'user'           => $user,
-           'expires'        => (new \DateTime())->setTimestamp($expires),
+           'expires'        => $now->setTimestamp($expires),
            'scope'          => $scope,
         ));
         $this->_em->persist($RefreshToken);
