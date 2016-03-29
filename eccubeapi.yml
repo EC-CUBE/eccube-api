@@ -9,7 +9,7 @@ info:
     使い方などはこちらをご覧ください。[here](https://ec-cube.github.io/api)
 # ドメイン名を入力
 host: <your-host-name>
-basePath: /api/v1
+basePath: <base-path>/api/v1
 schemes:
   - http
   - https
@@ -88,6 +88,37 @@ paths:
             items:
               title: product
               type: object
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/errors'
+  /products/{id}:
+    get:
+      description: 公開されている商品詳細を取得します。
+      parameters:
+        -
+          name: id
+          in: path
+          description: 商品ID
+          required: true
+          type: integer
+      responses:
+        200:
+          description: Successful response
+          schema:
+            type: object
+            required:
+              - id
+            properties:
+              id:
+                type: integer
+                format: int64
+              name:
+                type: string
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/errors'
 securityDefinitions:
   eccubeOAuth2Implicit:
     type: oauth2
@@ -127,3 +158,16 @@ securityDefinitions:
     flow: accessCode
     authorizationUrl: https://<your-host-name>/<admin_dir>/OAuth2/v1/authorize
     tokenUrl: https://<your-host-name>/<admin_dir>/OAuth2/v1/token
+
+definitions:
+  errors:
+    type: object
+    required:
+      - code
+      - message
+    properties:
+      code:
+        type: integer
+        format: int32
+      message:
+        type: string

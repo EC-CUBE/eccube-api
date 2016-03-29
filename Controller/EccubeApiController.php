@@ -17,6 +17,7 @@ use Eccube\Event\EccubeEvents;
 use Eccube\Event\EventArgs;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class EccubeApiController extends AbstractApiController
 {
@@ -28,13 +29,13 @@ class EccubeApiController extends AbstractApiController
      * @param Request     $request
      * @return \Symfony\Component\HttpFoundation\JsonResponse
      */
-    public function index(Application $app, Request $request)
+    public function products(Application $app, Request $request)
     {
         if ($request->getMethod() === "OPTIONS") {
             return new Response();
         }
         // OAuth2 Authorization
-        $scope_reuqired= 'read';
+        $scope_reuqired = 'read';
         if (!$this->verifyRequest($app, $scope_reuqired)) {
             return $app['oauth2.server.resource']->getResponse();
         }
@@ -166,32 +167,56 @@ class EccubeApiController extends AbstractApiController
         return $this->getWrapperedResponseBy($app, array('products' => $results));
     }
 
-    public function swagger(Application $app, Request $request)
-    {
-        $yml = file_get_contents(__DIR__.'/../eccubeapi.yml');
-        $yml = str_replace('https://<your-host-name>', rtrim($app->url('homepage'), '/'), $yml);
-        $yml = str_replace('<your-host-name>', $_SERVER['HTTP_HOST'], $yml);
-        $yml = str_replace('<admin_dir>', rtrim($app['config']['admin_dir'], '/'), $yml);
-        $Response = new Response();
-        $Response->setContent($yml);
-        return $Response;
-    }
 
+    /**
+     * swagger画面を表示します。
+     *
+     * @param Application $app
+     * @param Request     $request
+     * @return Response
+     */
     public function swaggerUI(Application $app, Request $request)
     {
         $swagger = file_get_contents(__DIR__.'/../Resource/swagger-ui/index.html');
         $swagger = str_replace('your-client-id', htmlspecialchars($request->get('client_id'), ENT_QUOTES), $swagger);
         $swagger = str_replace('scopeSeparator: ","', 'scopeSeparator: " "', $swagger);
         $swagger = str_replace('url = "http://petstore.swagger.io/v2/swagger.json";', 'url = "'.$app->url('swagger_yml').'"; window.oAuthRedirectUrl="'.$app->url('swagger_o2c').'";', $swagger);
-        $swagger = preg_replace('/src=\'(.*)\'(.*)/', 'src=\'/plugin/api/swagger-ui/${1}\'${2}', $swagger);
-        $swagger = preg_replace('/src="(.*)"(.*)/', 'src="/plugin/api/swagger-ui/${1}"${2}', $swagger);
-        $swagger = preg_replace('/link href=\'(.*)\'(.*)/', 'link href=\'/plugin/api/swagger-ui/${1}\'${2}', $swagger);
+        $swagger = preg_replace('/src=\'(.*)\'(.*)/', 'src=\''.$app['config']['root_urlpath'].'/plugin/api/assets/${1}\'${2}', $swagger);
+        $swagger = preg_replace('/src="(.*)"(.*)/', 'src="'.$app['config']['root_urlpath'].'/plugin/api/assets/${1}"${2}', $swagger);
+        $swagger = preg_replace('/link href=\'(.*)\'(.*)/', 'link href=\''.$app['config']['root_urlpath'].'/plugin/api/assets/${1}\'${2}', $swagger);
 
         $Response = new Response();
         $Response->setContent($swagger);
         return $Response;
     }
 
+    /**
+     * ymlファイルを読み込んで表示します。
+     *
+     * @param Application $app
+     * @param Request     $request
+     * @return Response
+     */
+    public function swagger(Application $app, Request $request)
+    {
+        $yml = file_get_contents(__DIR__.'/../eccubeapi.yml');
+        $yml = str_replace('https://<your-host-name>', rtrim($app->url('homepage'), '/'), $yml);
+        $yml = str_replace('<your-host-name>', $_SERVER['HTTP_HOST'], $yml);
+        $yml = str_replace('<admin_dir>', rtrim($app['config']['admin_dir'], '/'), $yml);
+        $yml = str_replace('<base-path>', $app['config']['root_urlpath'], $yml);
+        $Response = new Response();
+        $Response->setContent($yml);
+        return $Response;
+    }
+
+
+    /**
+     * OAuth2用ダイアログを表示します。
+     *
+     * @param Application $app
+     * @param Request     $request
+     * @return Response
+     */
     public function swaggerO2c(Application $app, Request $request)
     {
         $swagger = file_get_contents(__DIR__.'/../Resource/swagger-ui/o2c.html');
