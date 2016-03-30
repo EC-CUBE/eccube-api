@@ -71,7 +71,8 @@ class OAuth2Controller
 
             // handle the request
             $Response = $server->handleAuthorizeRequest($BridgeRequest, $Response, $is_authorized, $user_id);
-            if ($BridgeRequest->get('redirect_uri') == 'urn:ietf:wg:oauth:2.0:oob' && empty(json_decode($Response->getContent(), true))) {
+            $content = json_decode($Response->getContent(), true);
+            if ($BridgeRequest->get('redirect_uri') == 'urn:ietf:wg:oauth:2.0:oob' && empty($content)) {
                 $ResponseType = $server->getResponseType('code');
                 $res = $ResponseType->getAuthorizeResponse(
                     array(
