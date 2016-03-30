@@ -31,15 +31,6 @@ class EccubeApiController extends AbstractApiController
      */
     public function products(Application $app, Request $request)
     {
-        if ($request->getMethod() === "OPTIONS") {
-            return new Response();
-        }
-        // OAuth2 Authorization
-        $scope_reuqired = 'read';
-        if (!$this->verifyRequest($app, $scope_reuqired)) {
-            return $app['oauth2.server.resource']->getResponse();
-        }
-
         $BaseInfo = $app['eccube.repository.base_info']->get();
 
         // Doctrine SQLFilter
@@ -55,49 +46,19 @@ class EccubeApiController extends AbstractApiController
         $builder = $app['form.factory']->createNamedBuilder('', 'search_product');
         $builder->setMethod('GET');
 
-        $event = new EventArgs(
-            array(
-                'builder' => $builder,
-            ),
-            $request
-        );
-        $app['eccube.event.dispatcher']->dispatch(EccubeEvents::FRONT_PRODUCT_INDEX_INITIALIZE, $event);
-
         /* @var $searchForm \Symfony\Component\Form\FormInterface */
         $searchForm = $builder->getForm();
-
 
         $searchForm->handleRequest($request);
 
         if (!$searchForm->isValid()) {
-            $errors = array(
-                'errors' => array(
-                    array(
-                        'code' => 100,
-                        'message' => 'エラーです。',
-                    ),
-                    array(
-                        'code' => 101,
-                        'message' => $searchForm->getErrorsAsString(),
-                    ),
-                ),
-            );
-            return $app->json($errors, 400);
+            $this->addErrors($app, 2001, $searchForm->getErrorsAsString());
+            return $app->json($this->getErrors(), 400);
         }
 
         // paginator
         $searchData = $searchForm->getData();
         $qb = $app['eccube.repository.product']->getQueryBuilderBySearchData($searchData);
-
-        $event = new EventArgs(
-            array(
-                'searchData' => $searchData,
-                'qb' => $qb,
-            ),
-            $request
-        );
-        $app['eccube.event.dispatcher']->dispatch(EccubeEvents::FRONT_PRODUCT_INDEX_SEARCH, $event);
-        $searchData = $event->getArgument('searchData');
 
         $pagination = $app['paginator']()->paginate(
             $qb,
@@ -114,14 +75,6 @@ class EccubeApiController extends AbstractApiController
         ));
         $builder->setMethod('GET');
 
-        $event = new EventArgs(
-            array(
-                'builder' => $builder,
-            ),
-            $request
-        );
-        $app['eccube.event.dispatcher']->dispatch(EccubeEvents::FRONT_PRODUCT_INDEX_DISP, $event);
-
         $dispNumberForm = $builder->getForm();
 
         $dispNumberForm->handleRequest($request);
@@ -135,19 +88,16 @@ class EccubeApiController extends AbstractApiController
         ));
         $builder->setMethod('GET');
 
-        $event = new EventArgs(
-            array(
-                'builder' => $builder,
-            ),
-            $request
-        );
-        $app['eccube.event.dispatcher']->dispatch(EccubeEvents::FRONT_PRODUCT_INDEX_ORDER, $event);
-
         $orderByForm = $builder->getForm();
 
         $orderByForm->handleRequest($request);
 
         $products = $qb->getQuery()->getResult();
+
+        if (count($products) == 0) {
+            $this->addErrors($app, 1002);
+            return $app->json($this->getErrors());
+        }
 
         $results = array();
         /** @var \Eccube\Entity\Product $Product */
@@ -163,8 +113,42 @@ class EccubeApiController extends AbstractApiController
             );
         }
 
-        // Wrappered OAuth2 response
-        return $this->getWrapperedResponseBy($app, array('products' => $results));
+        $metadata = array(
+            'totalItemCount' => count($products),
+            'limit' => $searchData['disp_number']->getId(),
+            'offset' => $searchData['disp_number']->getId() * $searchData['pageno'],
+        );
+
+        return $app->json(array('products' => $results, 'metadata' => $metadata));
+    }
+
+
+    /**
+     * 商品詳細取得API
+     *
+     * @param Application $app
+     * @param Request     $request
+     * @param             $id
+     * @return \Symfony\Component\HttpFoundation\JsonResponse
+     * @throws NotFoundHttpException
+     */
+    public function productsDetail(Application $app, Request $request, $id)
+    {
+        $BaseInfo = $app['eccube.repository.base_info']->get();
+        if ($BaseInfo->getNostockHidden() === Constant::ENABLED) {
+            $app['orm.em']->getFilters()->enable('nostock_hidden');
+        }
+
+        /* @var $Product \Eccube\Entity\Product */
+        $Product = $app['eccube.repository.product']->find($id);
+
+        if (!$Product || count($Product->getProductClasses()) < 1) {
+            $this->addErrors($app, 1001);
+            return $app->json($this->getErrors(), 400);
+        }
+
+        return $app->json(array('product' => $Product->toArray()));
+
     }
 
 
@@ -204,6 +188,8 @@ class EccubeApiController extends AbstractApiController
         $yml = str_replace('<your-host-name>', $_SERVER['HTTP_HOST'], $yml);
         $yml = str_replace('<admin_dir>', rtrim($app['config']['admin_dir'], '/'), $yml);
         $yml = str_replace('<base-path>', $app['config']['root_urlpath'], $yml);
+        $yml = str_replace('/<base-endpoint>', $app['config']['api.endpoint'], $yml);
+        $yml = str_replace('<base-version>', $app['config']['api.version'], $yml);
         $Response = new Response();
         $Response->setContent($yml);
         return $Response;

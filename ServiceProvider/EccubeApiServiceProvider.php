@@ -29,27 +29,20 @@ class EccubeApiServiceProvider implements ServiceProviderInterface
 {
     public function register(BaseApplication $app)
     {
-        // // メッセージ登録
-        // $app['translator'] = $app->share($app->extend('translator', function ($translator, \Silex\Application $app) {
-        //     $translator->addLoader('yaml', new \Symfony\Component\Translation\Loader\YamlFileLoader());
-        //     $file = __DIR__ . '/../Resource/locale/message.' . $app['locale'] . '.yml';
-        //     if (file_exists($file)) {
-        //         $translator->addResource('yaml', $file, $app['locale']);
-        //     }
-        //     return $translator;
-        // }));
+         // メッセージ登録
+         $app['translator'] = $app->share($app->extend('translator', function ($translator, \Silex\Application $app) {
+             $translator->addLoader('yaml', new \Symfony\Component\Translation\Loader\YamlFileLoader());
+             $file = __DIR__ . '/../Resource/locale/message_api.' . $app['locale'] . '.yml';
+             if (file_exists($file)) {
+                 $translator->addResource('yaml', $file, $app['locale']);
+             }
+             return $translator;
+         }));
 
         // load config
         $conf = $app['config'];
         $app['config'] = $app->share(function () use ($conf) {
             $confarray = array();
-//             $path_file = __DIR__ . '/../Resource/config/path.yml';
-//             if (file_exists($path_file)) {
-//                 $config_yml = Yaml::parse(file_get_contents($path_file));
-//                 if (isset($config_yml)) {
-//                     $confarray = array_replace_recursive($confarray, $config_yml);
-//                 }
-//             }
 
             $constant_file = __DIR__.'/../Resource/config/constant.yml';
             if (file_exists($constant_file)) {
@@ -91,6 +84,8 @@ class EccubeApiServiceProvider implements ServiceProviderInterface
         $c = $app['controllers_factory'];
         $c->match('/products', 'Plugin\EccubeApi\Controller\EccubeApiController::products')->bind('api_products');
         $c->get('/products/{id}', 'Plugin\EccubeApi\Controller\EccubeApiController::productsDetail')->bind('api_products_detail')->assert('id', '\d+');
+        // 認証sample
+        $c->get('/productsauthsample/{id}', 'Plugin\EccubeApi\Controller\EccubeApiSampleController::productsDetail')->bind('api_products_auth_sample')->assert('id', '\d+');
         $app->mount($app['config']['api.endpoint'].'/'.$app['config']['api.version'], $c);
 
         // Swagger 関連
