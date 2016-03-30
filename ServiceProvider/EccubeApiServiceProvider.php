@@ -84,6 +84,8 @@ class EccubeApiServiceProvider implements ServiceProviderInterface
         $c = $app['controllers_factory'];
         $c->match('/products', 'Plugin\EccubeApi\Controller\EccubeApiController::products')->bind('api_products');
         $c->get('/products/{id}', 'Plugin\EccubeApi\Controller\EccubeApiController::productsDetail')->bind('api_products_detail')->assert('id', '\d+');
+        // 認証sample
+        $c->get('/productsauthsample/{id}', 'Plugin\EccubeApi\Controller\EccubeApiSampleController::productsDetail')->bind('api_products_auth_sample')->assert('id', '\d+');
         $app->mount($app['config']['api.endpoint'].'/'.$app['config']['api.version'], $c);
 
         // Swagger 関連

@@ -9,7 +9,7 @@ info:
     使い方などはこちらをご覧ください。[here](https://ec-cube.github.io/api)
 # ドメイン名を入力
 host: <your-host-name>
-basePath: <base-path>/api/v1
+basePath: <base-path>/<base-endpoint>/<base-version>
 schemes:
   - http
   - https
@@ -93,6 +93,33 @@ paths:
           schema:
             $ref: '#/definitions/errors'
   /products/{id}:
+    get:
+      description: 公開されている商品詳細を取得します。
+      parameters:
+        -
+          name: id
+          in: path
+          description: 商品ID
+          required: true
+          type: integer
+      responses:
+        200:
+          description: Successful response
+          schema:
+            type: object
+            required:
+              - id
+            properties:
+              id:
+                type: integer
+                format: int64
+              name:
+                type: string
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/errors'
+  /productsauthsample/{id}:
     get:
       description: 公開されている商品詳細を取得します。
       parameters:
