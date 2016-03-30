@@ -163,8 +163,43 @@ class EccubeApiController extends AbstractApiController
             );
         }
 
+        $metadata = array(
+            'totalItemCount' => count($products),
+            'limit' => $searchData['disp_number']->getId(),
+            'offset' => $searchData['disp_number']->getId() * $searchData['pageno'],
+        );
+
         // Wrappered OAuth2 response
-        return $this->getWrapperedResponseBy($app, array('products' => $results));
+        return $this->getWrapperedResponseBy($app, array('products' => $results, 'metadata' => $metadata));
+    }
+
+
+    /**
+     * 商品詳細取得API
+     *
+     * @param Application $app
+     * @param Request     $request
+     * @param             $id
+     * @return \Symfony\Component\HttpFoundation\JsonResponse
+     * @throws NotFoundHttpException
+     */
+    public function productsDetail(Application $app, Request $request, $id)
+    {
+        $BaseInfo = $app['eccube.repository.base_info']->get();
+        if ($BaseInfo->getNostockHidden() === Constant::ENABLED) {
+            $app['orm.em']->getFilters()->enable('nostock_hidden');
+        }
+
+        /* @var $Product \Eccube\Entity\Product */
+        $Product = $app['eccube.repository.product']->find($id);
+
+        if (!$Product || count($Product->getProductClasses()) < 1) {
+            $this->addErrors($app, 101);
+            return $app->json($this->getErrors(), 404);
+        }
+
+        return $app->json(array('product' => $Product->toArray()));
+
     }
 
 

@@ -29,27 +29,20 @@ class EccubeApiServiceProvider implements ServiceProviderInterface
 {
     public function register(BaseApplication $app)
     {
-        // // メッセージ登録
-        // $app['translator'] = $app->share($app->extend('translator', function ($translator, \Silex\Application $app) {
-        //     $translator->addLoader('yaml', new \Symfony\Component\Translation\Loader\YamlFileLoader());
-        //     $file = __DIR__ . '/../Resource/locale/message.' . $app['locale'] . '.yml';
-        //     if (file_exists($file)) {
-        //         $translator->addResource('yaml', $file, $app['locale']);
-        //     }
-        //     return $translator;
-        // }));
+         // メッセージ登録
+         $app['translator'] = $app->share($app->extend('translator', function ($translator, \Silex\Application $app) {
+             $translator->addLoader('yaml', new \Symfony\Component\Translation\Loader\YamlFileLoader());
+             $file = __DIR__ . '/../Resource/locale/message_api.' . $app['locale'] . '.yml';
+             if (file_exists($file)) {
+                 $translator->addResource('yaml', $file, $app['locale']);
+             }
+             return $translator;
+         }));
 
         // load config
         $conf = $app['config'];
         $app['config'] = $app->share(function () use ($conf) {
             $confarray = array();
-//             $path_file = __DIR__ . '/../Resource/config/path.yml';
-//             if (file_exists($path_file)) {
-//                 $config_yml = Yaml::parse(file_get_contents($path_file));
-//                 if (isset($config_yml)) {
-//                     $confarray = array_replace_recursive($confarray, $config_yml);
-//                 }
-//             }
 
             $constant_file = __DIR__.'/../Resource/config/constant.yml';
             if (file_exists($constant_file)) {
