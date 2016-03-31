@@ -34,13 +34,13 @@ app/console plugin:develop enable --code=EccubeApi
 
 swagger ui の画面へ遷移すれば成功です
 
-# クライアントコードの生成
+# APIクライアントコードの生成
 
-[swagger editor](http://editor.swagger.io/)を利用して、クライアントコードを自動生成することが出来ます
+[swagger editor](http://editor.swagger.io/)を利用して、APIクライアントコードを自動生成することが出来ます
 
 * `eccubeapi.yml`に記述されている内容をswagger editorに貼り付けます
 * `localhost`, `basePath`を環境に応じて修正します
-* `Generate Client`メニューから、任意の言語でクライアントのソースコードを生成することが出来ます
+* `Generate Client`メニューから、任意の言語でAPIクライアントのソースコードを生成することが出来ます
 
 # 開発ドキュメント
 
