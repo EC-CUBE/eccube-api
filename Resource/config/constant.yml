@@ -1,2 +1,18 @@
 api.version: v0
 api.endpoint: /api
+oauth2:
+    use_jwt_access_tokens: false
+    store_encrypted_token_string: true
+    use_openid_connect: true
+    id_lifetime: 3600
+    access_lifetime: 3600
+    www_realm: Service
+    token_param_name: access_token
+    token_bearer_header_name: Bearer
+    enforce_state: true
+    require_exact_redirect_uri: true
+    allow_implicit: true
+    allow_credentials_in_request_body: true
+    allow_public_clients: true
+    always_issue_new_refresh_token: false
+    unset_refresh_token_after_use: true
