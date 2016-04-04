@@ -154,7 +154,7 @@ securityDefinitions:
       read: Grants read access to objects.
       write: Grants writes access to objects.
     flow: implicit
-    authorizationUrl: https://<your-host-name>/<admin_dir>/OAuth2/v1/authorize
+    authorizationUrl: https://<your-host-name>/<admin_dir>/OAuth2/<base-version>/authorize
   eccubeOAuth2AuthorizationCode:
     type: oauth2
     description: OAuth2.0 Authentication using the Authorization Code Flow.
@@ -162,8 +162,8 @@ securityDefinitions:
       read: Grants read access to objects.
       write: Grants writes access to objects.
     flow: accessCode
-    authorizationUrl: https://<your-host-name>/<admin_dir>/OAuth2/v1/authorize
-    tokenUrl: https://<your-host-name>/<admin_dir>/OAuth2/v1/token
+    authorizationUrl: https://<your-host-name>/<admin_dir>/OAuth2/<base-version>/authorize
+    tokenUrl: https://<your-host-name>/<admin_dir>/OAuth2/<base-version>/token
   eccubeOpenIDConnectImplicit:
     type: oauth2
     description: OpenID Connect Authentication using the Implicit Flow.
@@ -173,7 +173,7 @@ securityDefinitions:
       openid: Required. OpenID Connect Authorization supports.
       offline_access: OpenID Connect offline access supports.
     flow: implicit
-    authorizationUrl: https://<your-host-name>/<admin_dir>/OAuth2/v1/authorize
+    authorizationUrl: https://<your-host-name>/<admin_dir>/OAuth2/<base-version>/authorize
   eccubeOpenIDConnectAuthorizationCode:
     type: oauth2
     description: OpenID Connect Authentication using the Authorization Code Flow.
@@ -183,8 +183,8 @@ securityDefinitions:
       openid: Required. OpenID Connect Authorization supports.
       offline_access: OpenID Connect offline access supports.
     flow: accessCode
-    authorizationUrl: https://<your-host-name>/<admin_dir>/OAuth2/v1/authorize
-    tokenUrl: https://<your-host-name>/<admin_dir>/OAuth2/v1/token
+    authorizationUrl: https://<your-host-name>/<admin_dir>/OAuth2/<base-version>/authorize
+    tokenUrl: https://<your-host-name>/<admin_dir>/OAuth2/<base-version>/token
 
 definitions:
   errors:
