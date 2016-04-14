@@ -194,7 +194,10 @@ class EccubeApiServiceProvider implements ServiceProviderInterface
         });
 
         // OAuth2 Server
-        $app['oauth2.server.authorization'] = $app->share(function () use ($app) {
+        $oauth2_config = $app['config']['oauth2'];
+        $oauth2_config['issuer'] = rtrim($app->url('homepage'), '/');
+
+        $app['oauth2.server.authorization'] = $app->share(function () use ($app, $oauth2_config) {
             $grantTypes = array(
                 'authorization_code' => $app['oauth2.openid.granttype.authorization_code'],
                 'refresh_token' => $app['oauth2.granttype.refresh_token']
@@ -213,18 +216,12 @@ class EccubeApiServiceProvider implements ServiceProviderInterface
                 'access_token'       => $app['eccube.repository.oauth2.access_token'],
                 'refresh_token' => $app['eccube.repository.oauth2.refresh_token'],
                 'scope' => $app['eccube.repository.oauth2.scope'],
-            ), array(
-                'enforce_state' => true,
-                'allow_implicit' => true,
-                'use_openid_connect' => true,
-                'issuer' => rtrim($app->url('homepage'), '/'),
-            ), $grantTypes, $responseTypes
-            );
+            ), $oauth2_config, $grantTypes, $responseTypes);
             $server->addStorage($app['eccube.repository.oauth2.openid.public_key'], 'public_key');
             return $server;
         });
 
-        $app['oauth2.server.token'] = $app->share(function () use ($app) {
+        $app['oauth2.server.token'] = $app->share(function () use ($app, $oauth2_config) {
 
             $grantTypes = array(
                 'authorization_code' => $app['oauth2.openid.granttype.authorization_code'],
@@ -245,17 +242,12 @@ class EccubeApiServiceProvider implements ServiceProviderInterface
                 'refresh_token' => $app['eccube.repository.oauth2.refresh_token'],
                 'authorization_code' => $app['eccube.repository.oauth2.authorization_code'],
                 'scope' => $app['eccube.repository.oauth2.scope'],
-            ), array(
-                'enforce_state' => true,
-                'allow_implicit' => true,
-                'use_openid_connect' => true,
-                'issuer' => rtrim($app->url('homepage'), '/'),
-            ), $grantTypes, $responseTypes);
+            ), $oauth2_config, $grantTypes, $responseTypes);
             $server->addStorage($app['eccube.repository.oauth2.openid.public_key'], 'public_key');
             return $server;
         });
 
-        $app['oauth2.server.resource'] = $app->share(function () use ($app) {
+        $app['oauth2.server.resource'] = $app->share(function () use ($app, $oauth2_config) {
             $grantTypes = array(
                 'authorization_code' => $app['oauth2.openid.granttype.authorization_code'],
                 'client_credentials' => $app['oauth2.granttype.client_credential']
@@ -264,7 +256,7 @@ class EccubeApiServiceProvider implements ServiceProviderInterface
             'client_credentials' => $app['eccube.repository.oauth2.client'],
             'access_token' => $app['eccube.repository.oauth2.access_token'],
             'authorization_code' => $app['eccube.repository.oauth2.authorization_code'],
-            ), array(), $grantTypes);
+            ), $oauth2_config, $grantTypes);
             return $server;
         });
 
