@@ -22,10 +22,11 @@ Plugin\EccubeApi\Entity\OAuth2\Client:
       type:       string
       length: 2000
       default:    ""
-    scope:
-      type:       string
-      length: 4000
-      nullable:   true
+  oneToMany:
+    ClientScopes:
+      targetEntity: Plugin\EccubeApi\Entity\OAuth2\ClientScope
+      cascade: ["persist", "remove"]
+      mappedBy: Client
   manyToOne:
     Customer:
       targetEntity: Eccube\Entity\Customer

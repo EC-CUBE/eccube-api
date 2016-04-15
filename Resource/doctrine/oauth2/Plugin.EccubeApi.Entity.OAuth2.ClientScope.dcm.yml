@@ -1,0 +1,27 @@
+Plugin\EccubeApi\Entity\OAuth2\ClientScope:
+  type:             entity
+  table:            plg_oauth2_client_scope
+  repositoryClass:  Plugin\EccubeApi\Repository\OAuth2\ClientScopeRepository
+  id:
+    client_id:
+      type:   integer
+      nullable: false
+      unsigned: false
+      id: true
+    scope_id:
+      type:   integer
+      nullable: false
+      unsigned: false
+      id: true
+  fields:
+  manyToOne:
+    Client:
+      targetEntity: Plugin\EccubeApi\Entity\OAuth2\Client
+      joinColumn:
+        name:                 client_id
+        referencedColumnName: id
+    Scope:
+      targetEntity: Plugin\EccubeApi\Entity\OAuth2\Scope
+      joinColumn:
+        name:                 scope_id
+        referencedColumnName: id
