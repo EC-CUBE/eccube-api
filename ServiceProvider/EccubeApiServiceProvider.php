@@ -139,6 +139,10 @@ class EccubeApiServiceProvider implements ServiceProviderInterface
         $app['eccube.repository.oauth2.scope'] = $app->share(function () use ($app) {
             return $app['orm.em']->getRepository('Plugin\EccubeApi\Entity\OAuth2\Scope');
         });
+        $app['eccube.repository.oauth2.clientscope'] = $app->share(function () use ($app) {
+            return $app['orm.em']->getRepository('Plugin\EccubeApi\Entity\OAuth2\ClientScope');
+        });
+
         // OAuth2 GrantType
         $app['oauth2.openid.granttype.authorization_code'] = $app->share(function () use ($app) {
             return new \OAuth2\OpenID\GrantType\AuthorizationCode(

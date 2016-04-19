@@ -77,14 +77,15 @@ class ApiClientType extends AbstractType
                     ))
                 ),
             ))
-            ->add('scope', 'text', array(
+            ->add('Scopes', 'entity', array(
                 'label' => 'scope',
-                'read_only' => true,
-                'constraints' => array(
-                    new Assert\Length(array(
-                        'max' => 4000,
-                    ))
-                ),
+                'choice_label' => 'label',
+                'choice_value' => 'scope',
+                'choice_name' => 'scope',
+                'multiple' => true,
+                'expanded' => true,
+                'mapped' => false,
+                'class' => 'Plugin\EccubeApi\Entity\OAuth2\Scope'
             ))
             ->add('public_key', 'textarea', array(
                 'label' => 'id_token 公開鍵',

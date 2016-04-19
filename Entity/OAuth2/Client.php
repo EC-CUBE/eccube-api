@@ -46,6 +46,18 @@ class Client extends \Eccube\Entity\AbstractEntity
      */
     private $Member;
 
+    /**
+     * @var \Doctrine\Common\Collections\Collection
+     */
+    private $ClientScopes;
+
+    /**
+     * Constructor
+     */
+    public function __construct()
+    {
+        $this->ClientScopes = new \Doctrine\Common\Collections\ArrayCollection();
+    }
 
     /**
      * Get id
@@ -295,13 +307,21 @@ class Client extends \Eccube\Entity\AbstractEntity
         return false;
     }
 
+    public function getScopes()
+    {
+        $ClientScopes = $this->getClientScopes();
+        $Scopes = array();
+        foreach ($ClientScopes as $ClientScope) {
+            $Scopes[] = $ClientScope->getScope();
+        }
+        return $Scopes;
+    }
+
     public function getScopeAsArray()
     {
-        $scope = $this->getScope();
-        if ($scope) {
-            return explode(' ', $scope);
-        }
-        return array();
+        return array_map(function ($Scope) {
+            return $Scope->getScope();
+        }, $this->getScopes());
     }
 
     public function checkScope($scope)
@@ -313,5 +333,37 @@ class Client extends \Eccube\Entity\AbstractEntity
             }
         }
         return false;
+    }
+
+    /**
+     * Add ClientScopes
+     *
+     * @param \Plugin\EccubeApi\Entity\OAuth2\ClientScope $clientScopes
+     */
+    public function addClientScope(\Plugin\EccubeApi\Entity\OAuth2\ClientScope $clientScopes)
+    {
+        $this->ClientScopes[] = $clientScopes;
+
+        return $this;
+    }
+
+    /**
+     * Remove ClientScopes
+     *
+     * @param \Plugin\EccubeApi\Entity\OAuth2\ClientScope $clientScopes
+     */
+    public function removeClientScope(\Plugin\EccubeApi\Entity\OAuth2\ClientScope $clientScopes)
+    {
+        $this->ClientScopes->removeElement($clientScopes);
+    }
+
+    /**
+     * Get ClientScopes
+     *
+     * @return \Doctrine\Common\Collections\Collection
+     */
+    public function getClientScopes()
+    {
+        return $this->ClientScopes;
     }
 }

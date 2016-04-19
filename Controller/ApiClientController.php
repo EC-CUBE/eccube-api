@@ -31,6 +31,10 @@ class ApiClientController
     {
         $Member = $app['eccube.repository.member']->find($member_id);
         $Client = $app['eccube.repository.oauth2.client']->find($client_id);
+        $Scopes = array_map(function ($ClientScope) {
+            return $ClientScope->getScope();
+        }, $app['eccube.repository.oauth2.clientscope']->findBy(array('Client' => $Client)));
+
         $userInfoConditions = array();
         if ($Client->hasMember()) {
             $userInfoConditions = array('Member' => $Client->getMember());
@@ -42,7 +46,9 @@ class ApiClientController
 
         $builder = $app['form.factory']->createBuilder('admin_api_client', $Client);
         $form = $builder->getForm();
-        $form['scope']->setData(self::DEFAULT_SCOPE); // TODO
+
+        $form['Scopes']->setData($Scopes);
+
         if ($PublicKey) {
             $form['public_key']->setData($PublicKey->getPublicKey());
             $form['encryption_algorithm']->setData($PublicKey->getEncryptionAlgorithm());
@@ -51,6 +57,23 @@ class ApiClientController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+
+            $ClientScopes = $app['eccube.repository.oauth2.clientscope']->findBy(array('Client' => $Client));
+            foreach ($ClientScopes as $ClientScope) {
+                $app['orm.em']->remove($ClientScope);
+                $app['orm.em']->flush($ClientScope);
+            }
+
+            $Scopes = $form['Scopes']->getData();
+            foreach ($Scopes as $Scope) {
+                $ClientScope = new \Plugin\EccubeApi\Entity\OAuth2\ClientScope();
+                $ClientScope->setClient($Client);
+                $ClientScope->setClientId($Client->getId());
+                $ClientScope->setScope($Scope);
+                $ClientScope->setScopeId($Scope->getId());
+                $app['orm.em']->persist($ClientScope);
+                $Client->addClientScope($ClientScope);
+            }
 
             $app['orm.em']->flush($Client);
             $app->addSuccess('admin.register.complete', 'admin');
@@ -78,7 +101,8 @@ class ApiClientController
 
         $builder = $app['form.factory']->createBuilder('admin_api_client', $Client);
         $form = $builder->getForm();
-        $form['scope']->setData(self::DEFAULT_SCOPE); // TODO
+        $Scopes = $app['eccube.repository.oauth2.scope']->findBy(array('is_default' => true));
+        $form['Scopes']->setData($Scopes);
         $form['encryption_algorithm']->setData(self::DEFAULT_ENCRYPTION_ALGORITHM);
 
         $form->handleRequest($request);
@@ -97,8 +121,21 @@ class ApiClientController
 
             $Client->setClientIdentifier($client_id);
             $Client->setClientSecret($client_secret);
+
             $Client->setMember($Member);
             $app['orm.em']->persist($Client);
+            $app['orm.em']->flush($Client);
+
+            $Scopes = $form['Scopes']->getData();
+            foreach ($Scopes as $Scope) {
+                $ClientScope = new \Plugin\EccubeApi\Entity\OAuth2\ClientScope();
+                $ClientScope->setClient($Client);
+                $ClientScope->setClientId($Client->getId());
+                $ClientScope->setScope($Scope);
+                $ClientScope->setScopeId($Scope->getId());
+                $app['orm.em']->persist($ClientScope);
+                $Client->addClientScope($ClientScope);
+            }
 
             $is_new_public_key = false;
             if (!is_object($PublicKey)) {
