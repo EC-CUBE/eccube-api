@@ -18,6 +18,18 @@ Plugin\EccubeApi\Entity\OAuth2\Scope:
       nullable: true
     is_default:
       type:   boolean
+    customer_flg:
+      type: smallint
+      nullable: false
+      options:
+        default: '0'
+        unsigned: false
+    member_flg:
+      type: smallint
+      nullable: false
+      options:
+        default: '1'
+        unsigned: false
   indexes:
     plg_oauth2_scope_index:
       columns:

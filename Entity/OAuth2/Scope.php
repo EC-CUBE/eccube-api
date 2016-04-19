@@ -30,6 +30,16 @@ class Scope extends \Eccube\Entity\AbstractEntity
     private $is_default;
 
     /**
+     * @var integer
+     */
+    private $customer_flg = '0';
+
+    /**
+     * @var integer
+     */
+    private $member_flg = '1';
+
+    /**
      * @var \Doctrine\Common\Collections\Collection
      */
     private $ClientScope;
@@ -124,6 +134,52 @@ class Scope extends \Eccube\Entity\AbstractEntity
     public function isDefault()
     {
         return $this->is_default;
+    }
+
+    /**
+     * Set customer_flg
+     *
+     * @param integer $customerFlg
+     * @return Scope
+     */
+    public function setCustomerFlg($customerFlg)
+    {
+        $this->customer_flg = $customerFlg;
+
+        return $this;
+    }
+
+    /**
+     * Get customer_flg
+     *
+     * @return integer
+     */
+    public function getCustomerFlg()
+    {
+        return $this->customer_flg;
+    }
+
+    /**
+     * Set member_flg
+     *
+     * @param integer $memberFlg
+     * @return Scope
+     */
+    public function setMemberFlg($memberFlg)
+    {
+        $this->member_flg = $memberFlg;
+
+        return $this;
+    }
+
+    /**
+     * Get member_flg
+     *
+     * @return integer
+     */
+    public function getMemberFlg()
+    {
+        return $this->member_flg;
     }
 
     /**

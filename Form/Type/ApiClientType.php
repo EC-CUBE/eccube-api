@@ -46,14 +46,15 @@ class ApiClientType extends AbstractType
         $builder
             ->add('app_name', 'text', array(
                 'label' => 'アプリケーション名',
+                'required' => true,
                 'constraints' => array(
                     new Assert\NotBlank(),
                     new Assert\Length(array('max' => 255)),
                 ),
             ))
             ->add('redirect_uri', 'text', array(
-                'required' => false,
                 'label' => 'redirect_uri',
+                'required' => true,
                 'constraints' => array(
                     new Assert\NotBlank(),
                     new Assert\Length(array('max' => 2000)),
@@ -62,6 +63,7 @@ class ApiClientType extends AbstractType
             ->add('client_identifier', 'text', array(
                 'label' => 'Client ID',
                 'read_only' => true,
+                'required' => false,
                 'constraints' => array(
                     new Assert\Length(array(
                         'max' => 80,
@@ -71,6 +73,7 @@ class ApiClientType extends AbstractType
             ->add('client_secret', 'text', array(
                 'label' => 'Client secret',
                 'read_only' => true,
+                'required' => false,
                 'constraints' => array(
                     new Assert\Length(array(
                         'max' => 80,
@@ -85,11 +88,13 @@ class ApiClientType extends AbstractType
                 'multiple' => true,
                 'expanded' => true,
                 'mapped' => false,
+                'required' => false,
                 'class' => 'Plugin\EccubeApi\Entity\OAuth2\Scope'
             ))
             ->add('public_key', 'textarea', array(
                 'label' => 'id_token 公開鍵',
                 'read_only' => true,
+                'required' => false,
                 'constraints' => array(
                     new Assert\Length(array(
                         'max' => 2000,
@@ -99,6 +104,7 @@ class ApiClientType extends AbstractType
             ->add('encryption_algorithm', 'text', array(
                 'label' => 'id_token 暗号化アルゴリズム',
                 'read_only' => true,
+                'required' => false,
                 'constraints' => array(
                     new Assert\Length(array(
                         'max' => 100,
