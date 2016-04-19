@@ -101,6 +101,9 @@ class EccubeApiServiceProvider implements ServiceProviderInterface
         $ep->match('/OAuth2/'.$app['config']['api.version'].'/tokeninfo', 'Plugin\EccubeApi\Controller\OAuth2\OAuth2Controller::tokeninfo')->bind('oauth2_server_tokeninfo');
         $ep->match('/'.trim($app['config']['admin_route'], '/').'/OAuth2/'.$app['config']['api.version'].'/authorize', 'Plugin\EccubeApi\Controller\OAuth2\OAuth2Controller::authorize')->bind('oauth2_server_admin_authorize');
         $ep->match('/'.trim($app['config']['admin_route'], '/').'/OAuth2/'.$app['config']['api.version'].'/authorize/{code}', 'Plugin\EccubeApi\Controller\OAuth2\OAuth2Controller::authorizeOob')->assert('code', '\w+')->bind('oauth2_server_admin_authorize_oob');
+
+        $ep->match('/mypage/OAuth2/'.$app['config']['api.version'].'/authorize', 'Plugin\EccubeApi\Controller\OAuth2\OAuth2Controller::authorize')->bind('oauth2_server_mypage_authorize');
+        $ep->match('/mypage/OAuth2/'.$app['config']['api.version'].'/authorize/{code}', 'Plugin\EccubeApi\Controller\OAuth2\OAuth2Controller::authorizeOob')->assert('code', '\w+')->bind('oauth2_server_mypage_authorize_oob');
         $app->mount('/', $ep);
 
         // APIクライアント設定画面
@@ -110,6 +113,13 @@ class EccubeApiServiceProvider implements ServiceProviderInterface
         $m->delete('/setting/system/member/{member_id}/api/{client_id}/delete', 'Plugin\EccubeApi\Controller\ApiClientController::delete')->assert('member_id', '\d+')->assert('client_id', '\d+')->bind('admin_setting_system_client_delete');
         $m->match('/setting/system/member/{member_id}/api/new', 'Plugin\EccubeApi\Controller\ApiClientController::newClient')->assert('member_id', '\d+')->bind('admin_setting_system_client_new');
         $app->mount('/'.trim($app['config']['admin_route'], '/').'/', $m);
+
+        $c = $app['controllers_factory'];
+        $c->match('/api', 'Plugin\EccubeApi\Controller\ApiClientController::lists')->bind('mypage_api_lists');
+        $c->match('/api/{client_id}/edit', 'Plugin\EccubeApi\Controller\ApiClientController::edit')->assert('client_id', '\d+')->bind('mypage_api_client_edit');
+        $c->delete('/api/{client_id}/delete', 'Plugin\EccubeApi\Controller\ApiClientController::delete')->assert('client_id', '\d+')->bind('mypage_api_client_delete');
+        $c->match('/api/new', 'Plugin\EccubeApi\Controller\ApiClientController::newClient')->bind('mypage_api_client_new');
+        $app->mount('/mypage/', $c);
 
         // Form Extension
         $app['form.types'] = $app->share($app->extend('form.types', function ($types) use ($app) {

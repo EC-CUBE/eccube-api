@@ -39,7 +39,7 @@
                                                     <div id="client_list__menu_box_toggle--{{ Client.id }}" class="dropdown">
                                                         <a class="dropdown-toggle--{{ Client.id }}" data-toggle="dropdown" aria-expanded="false"><svg class="cb cb-ellipsis-h"> <use xlink:href="#cb-ellipsis-h" /></svg></a>
                                                         <ul id="client_list__menu--{{ Client.id }}" class="dropdown-menu dropdown-menu-right">
-                                                            <li><a href="{{ url('admin_setting_system_client_edit', { 'member_id' : Member.id , 'client_id' : Client.id }) }}" >編集</a></li>
+                                                            <li><a href="{{ url('admin_setting_system_client_edit', { 'member_id' : User.id , 'client_id' : Client.id }) }}" >編集</a></li>
                                                         </ul>
                                                     </div>
                                                 </td>
@@ -54,7 +54,7 @@
             </div><!-- /.box -->
             <div id="client_list__footer" class="row">
                 <div id="client_list__insert_button" class="col-xs-10 col-xs-offset-1 col-sm-6 col-sm-offset-3 text-center btn_area">
-                    <a href="{{ url('admin_setting_system_client_new', {'member_id' : Member.id}) }}" class="btn btn-primary btn-block btn-lg">
+                    <a href="{{ url('admin_setting_system_client_new', {'member_id' : User.id}) }}" class="btn btn-primary btn-block btn-lg">
                         新規登録
                     </a>
                 </div>

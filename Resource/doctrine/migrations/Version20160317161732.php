@@ -47,19 +47,24 @@ class Version20160317161732 extends AbstractMigration
             $metadatas[] = $em->getMetadataFactory()->getMetadataFor('\\Plugin\\EccubeApi\\Entity\\OAuth2\\'.$class);
         }
         $schemaTool = new \Doctrine\ORM\Tools\SchemaTool($em);
-        // $schemaTool->dropSchema($metadatas);
         $schemaTool->createSchema($metadatas);
 
         $scopes = array(
             'read' => '読み込み',
             'write' => '書き込み',
             'openid' => 'OpenID Connect 認証',
-            'offline_access' => 'オフラインアクセス'
+            'offline_access' => 'オフラインアクセス',
+            'profile' => 'プロフィール情報',
+            'email' => 'メールアドレス',
+            'address' => '住所',
+            'phone' => '電話番号'
         );
         foreach ($scopes as $scope => $label) {
             $Scope = new \Plugin\EccubeApi\Entity\OAuth2\Scope();
             $Scope->setScope($scope);
             $Scope->setLabel($label);
+            $Scope->setCustomerFlg(1);
+            $Scope->setMemberFlg(1);
             $Scope->setDefault(true);
             $em->persist($Scope);
         }

@@ -1,0 +1,43 @@
+{% extends 'default_frame.twig' %}
+
+{% block javascript %}
+    <script>
+        function changeAction(action) {
+            document.form1.action = action;
+        }
+    </script>
+{% endblock %}
+
+{% block main %}
+    <h1 class="page-heading">APIクライアント登録・編集</h1>
+    <div id="detail_wrap" class="container-fluid">
+        {% include 'Mypage/navi.twig' %}
+        <div id="api_client_list" class="table address_table">
+            <div id="api_client_list__list" class="tbody">
+                {% for Client in Clients %}
+                    <div id="api_client_list__item--{{ Client.id }}" class="addr_box tr">
+                        <div id="api_client_list__address--{{ Client.id }}" class="column is-edit td">
+                            <label for="address01">
+                                <p id="api_client_list__address_detail--{{ Client.id }}" class="address">{{ Client.appName }}</p>
+                            </label>
+                            <p id="api_client_list__edit_button--{{ Client.id }}" class="btn_edit">
+                                <a href="{{ url('mypage_api_client_edit', { client_id : Client.id }) }}">
+                                    <button class="btn btn-default btn-sm">変更</button>
+                                </a>
+                            </p>
+                        </div><!--/addr_box-->
+                    </div>
+                {% endfor %}
+            </div>
+            <div id="client_list__footer" class="row">
+                <div id="client_list__insert_button" class="col-xs-10 col-xs-offset-1 col-sm-6 col-sm-offset-3 text-center btn_area">
+                    <a href="{{ url('mypage_api_client_new') }}" class="btn btn-primary btn-block btn-lg">
+                        新規登録
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+{% endblock %}

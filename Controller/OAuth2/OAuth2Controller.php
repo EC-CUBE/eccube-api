@@ -39,6 +39,7 @@ class OAuth2Controller
             )
         );
 
+        $is_admin = false;
         if ('POST' === $request->getMethod()) {
             $form->handleRequest($request);
 
@@ -53,6 +54,7 @@ class OAuth2Controller
                     $is_authorized = false;
                 }
                 $UserInfo = $app['eccube.repository.oauth2.openid.userinfo']->findOneBy(array('Member' => $Member));
+                $is_admin = true;
             } elseif ($form->isValid() && $app->user() instanceof \Eccube\Entity\Customer && $Client->hasCustomer() && $Client->checkScope($scope)) {
                 $Customer = $Client->getCustomer();
                 if ($Customer->getId() !== $app->user()->getId()) {
@@ -82,7 +84,11 @@ class OAuth2Controller
                         'scope' => $scope
                     ),
                     $user_id);
-                return $app->redirect($app->url('oauth2_server_admin_authorize_oob', array('code' => $res[1]['query']['code'])));
+                $route = 'oauth2_server_mypage_authorize_oob';
+                if ($is_admin) {
+                    $route = 'oauth2_server_admin_authorize_oob';
+                }
+                return $app->redirect($app->url($route, array('code' => $res[1]['query']['code'])));
             }
             return $Response;
         }
@@ -92,8 +98,12 @@ class OAuth2Controller
             $scopes = explode(' ', $scope);
         }
 
+        $view = 'EccubeApi/Resource/template/mypage/OAuth2/authorization.twig';
+        if ($is_admin) {
+            $view = 'EccubeApi/Resource/template/admin/OAuth2/authorization.twig';
+        }
         return $app->render(
-            'EccubeApi/Resource/template/admin/OAuth2/authorization.twig',
+            $view,
             array(
                 'client_id' => $client_id,
                 'redirect_uri' => $redirect_uri,
@@ -116,8 +126,13 @@ class OAuth2Controller
         if (!is_object($AuthorizationCode)) {
             throw new NotFoundHttpException();
         }
+
+        $view = 'EccubeApi/Resource/template/mypage/OAuth2/authorization_code.twig';
+        if ($app->user() instanceof \Eccube\Entity\Member) {
+            $view = 'EccubeApi/Resource/template/admin/OAuth2/authorization_code.twig';
+        }
         return $app->render(
-            'EccubeApi/Resource/template/admin/OAuth2/authorization_code.twig',
+            $view,
             array('code' => $code)
         );
     }

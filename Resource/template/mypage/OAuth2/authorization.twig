@@ -43,7 +43,7 @@
     <ol id="permissions">
     </ol>
 
-    <form id="authorization_form" method="post" action="{{ url('oauth2_server_admin_authorize') }}{% if nonce|length %}?nonce={{ nonce }}{% endif %}">
+    <form id="authorization_form" method="post" action="{{ url('oauth2_server_mypage_authorize') }}{% if nonce|length %}?nonce={{ nonce }}{% endif %}">
         {{ form_widget(form._token) }}
         {{ form_widget(form.client_id) }}
         {{ form_widget(form.redirect_uri) }}

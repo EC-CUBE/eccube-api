@@ -1,0 +1,67 @@
+{% extends 'default_frame.twig' %}
+
+{% set body_class = 'mypage' %}
+
+{% set mypageno = 'api' %}
+
+{% block title %}APIクライアント管理{% endblock %}
+
+{% block stylesheet %}
+    <style>
+        #admin_api_client_public_key {
+            font-family: monospace;
+            min-height: 160px;
+        }
+        dt {
+            vertical-align: middle;
+        }
+        input[readonly], textarea[readonly] {
+            background-color: #eee;
+            opacity: 1;
+        }
+    </style>
+{% endblock stylesheet %}
+
+{% block main %}
+    <h1 class="page-heading">APIクライアント登録・編集</h1>
+    <div id="detail_wrap" class="container-fluid">
+        {% include 'Mypage/navi.twig' %}
+        <div id="detail_box" class="row">
+            <div id="detail_box__body" class="col-md-10 col-md-offset-1">
+                <form role="form" class="form-horizontal" name="form1" id="form1" method="post" action="" enctype="multipart/form-data">
+                    {{ form_row(form._token) }}
+                    <div id="detail_box__body_inner" class="dl_table">
+                        {{ form_row(form.app_name) }}
+                        {{ form_row(form.redirect_uri) }}
+                        {{ form_row(form.client_identifier) }}
+                        {{ form_row(form.client_secret) }}
+                        {{ form_row(form.Scopes) }}
+                        {{ form_row(form.public_key) }}
+                        {{ form_row(form.encryption_algorithm) }}
+                        <dl id="detail_box__mypage_api_endpoint_authorization">
+                            <dt><label class="control-label" for="mypage_api_endpoint_authorization">authorization エンドポイント</label></dt>
+                            <dd>{{ url('oauth2_server_mypage_authorize') }}</dd>
+                        </dl>
+                        <dl id="mypage_api_endpoint_token">
+                            <dt><label class="control-label" for="mypage_api_endpoint_token">token エンドポイント</label></dt>
+                            <dd>{{ url('oauth2_server_token') }}</dd>
+                        </dl>
+                        <dl id="mypage_api_endpoint_tokeninfo">
+                            <dt><label class="control-label" for="mypage_api_endpoint_tokeninfo">tokeninfo エンドポイント</label></dt>
+                            <dd>{{ url('oauth2_server_tokeninfo') }}?id_token=&lt;your id_token&gt;</dd>
+                        </dl>
+                    </div><!-- /.box-body -->
+                </form>
+            </div><!-- /.box -->
+            <div id="detail_box__edit_button" class="row no-padding">
+                <div class="btn_group col-sm-offset-4 col-sm-4">
+                    <p><button class="btn btn-primary btn-block btn-lg" onclick="document.form1.submit();">登録</button></p>
+                </div>
+                <div class="btn_group col-sm-offset-4 col-sm-4">
+                    <p><button class="btn btn-block btn-lg" onclick="location.href='{{ url('mypage_api_lists') }}';">戻る</button></p>
+                </div>
+            </div>
+        </div><!-- /.col -->
+    </div>
+
+{% endblock %}
