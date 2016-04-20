@@ -14,10 +14,24 @@ use OAuth2\OpenID\Storage\UserClaimsInterface;
 class UserInfoRepository extends EntityRepository implements UserClaimsInterface
 {
     // TODO implements user claims
-    public function getUserClaims($user_id, $scope) {
-        $UsreInfo =  $this->findOneBy(array('sub' => $user_id));
-        // TODO Customer or Member の情報で更新する
-        // TODO selected scope
+    public function getUserClaims($sub, $scope) {
+        $UserInfo =  $this->findOneBy(array('sub' => $sub));
+        if (!is_object($UserInfo)) {
+            return array();
+        }
+        if (is_object($UserInfo->getCustomer())) {
+            $UserInfo->mergeCustomer();
+        } elseif (is_object($UserInfo->getMember())) {
+            $UserInfo->mergeMember();
+        }
+        $UserInfoAddress = $UserInfo->getAddress();
+        $this->getEntityManager()->flush($UserInfoAddress);
+        $this->getEntityManager()->flush($UserInfo);
+        $scopes = array();
+        if ($scope) {
+            $scopes = explode(' ', $socpe);
+        }
+
         return $UserInfo->toArray();
     }
 }

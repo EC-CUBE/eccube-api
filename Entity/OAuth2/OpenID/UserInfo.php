@@ -457,6 +457,14 @@ class UserInfo extends \Eccube\Entity\AbstractEntity
         return $this->birthdate;
     }
 
+    public function getBirthdateAsString()
+    {
+        if ($this->getBirthdate() instanceof \Datetime) {
+            return $this->getBirthdate()->format('Y-m-d');
+        }
+        return null;
+    }
+
     /**
      * Set zoneinfo
      *
@@ -572,6 +580,16 @@ class UserInfo extends \Eccube\Entity\AbstractEntity
         return $this->updated_at;
     }
 
+    public function getUpdatedAtAsString()
+    {
+        if ($this->getUpdatedAt() instanceof \DateTime) {
+            $updatedAt = $this->getUpdatedAt();
+            $updatedAt->setTimeZone(new \DateTimeZone('UTC'));
+            return $updatedAt->format(\DateTime::RFC3339);
+        }
+        return null;
+    }
+
     /**
      * Set address
      *
@@ -639,5 +657,136 @@ class UserInfo extends \Eccube\Entity\AbstractEntity
     public function getMember()
     {
         return $this->Member;
+    }
+
+    /**
+     * Customer の内容を自分自身にマージします.
+     */
+    public function mergeCustomer()
+    {
+        $c = null;
+        if (is_object($this->getCustomer())) {
+            $c = $this->getCustomer();
+        } else {
+            return;
+        }
+        // TODO locale によって表示順を変更する
+        $this->setName($c->getName01().' '.$c->getName02());
+        $this->setGivenName($c->getName02());
+        $this->setFamilyName($c->getName01());
+        $this->setMiddleName(null);
+        $this->setNickname(null);
+        $this->setPreferredUsername($c->getEmail());
+        $this->setProfile(null);
+        $this->setPicture(null);
+        $this->setWebsite(null);
+        $this->setEmail($c->getEmail());
+        if (is_object($c->getStatus()) && $c->getStatus()->getId() === \Eccube\Entity\Master\CustomerStatus::ACTIVE) {
+            $this->setEmailVerified(true);
+        } else {
+            $this->setEmailVerified(false);
+        }
+        // TODO magic number
+        if (is_object($c->getSex()) && $c->getSex()->getId() === 1) {
+            $this->setGender('male');
+        } elseif (is_object($c->getSex()) && $c->getSex()->getId() === 2)  {
+            $this->setGender('female');
+        } else {
+            $this->setGender(null);
+        }
+        $this->setBirthdate($c->getBirth());
+        $this->setZoneinfo(null);
+        $this->setLocale(null);
+        $this->setPhoneNumber($c->getTel01().'-'.$c->getTel02().'-'.$c->getTel03());
+        $this->setPhoneNumberVerified(false);
+        $UserInfoAddress = $this->getAddress();
+        if (!is_object($UserInfoAddress)) {
+            $UserInfoAddress = new UserInfoAddress();
+        }
+        if (is_object($c->getCountry())) {
+            $UserInfoAddress->setCountry($c->getCountry()->getName());
+        }
+        $UserInfoAddress->setPostalCode($c->getZip01().'-'.$c->getZip02());
+        if (is_object($c->getPref())) {
+            $UserInfoAddress->setRegion($c->getPref()->getName());
+        }
+        $UserInfoAddress->setLocality($c->getAddr01());
+        $UserInfoAddress->setStreetAddress($c->getAddr02());
+        $formatted = $UserInfoAddress->getPostalCode().PHP_EOL
+            .$UserInfoAddress->getRegion()
+            .$UserInfoAddress->getLocality()
+            .$UserInfoAddress->getStreetAddress();
+        $UserInfoAddress->setFormatted($formatted);
+        $this->setAddress($UserInfoAddress);
+        $this->setUpdatedAt($c->getUpdateDate());
+    }
+
+    /**
+     * Member の内容を自分自身にマージします.
+     */
+    public function mergeMember()
+    {
+        $m = null;
+        if (is_object($this->getMember())) {
+            $m = $this->getMember();
+        } else {
+            return;
+        }
+
+        $this->setPreferredUsername($m->getUsername());
+        $this->setUpdatedAt($m->getUpdateDate());
+    }
+
+    public function toArrayByClaims($claims = null)
+    {
+        $Results = array();
+        switch ($claims) {
+            case 'profile':
+                $Results = array(
+                    'name' => $this->getName(),
+                    'family_name' => $this->getFamilyName(),
+                    'given_name' => $this->getGivenName(),
+                    'middle_name' => $this->getMiddleName(),
+                    'nickname' => $this->getNickName(),
+                    'preferred_username' => $this->getPreferredUsername(),
+                    'profile' => $this->getProfile(),
+                    'picture' => $this->getPicture(),
+                    'website' => $this->getWebsite(),
+                    'gender' => $this->getGender(),
+                    'birthdate' => $this->getBirthdateAsString(),
+                    'zoneinfo' => $this->getZoneinfo(),
+                    'locale' => $this->getLocale(),
+                    'updated_at' => $this->getUpdatedAtAsString()
+                );
+                break;
+
+            case 'email':
+                $Results = array(
+                    'email' => $this->getEmail(),
+                    'email_verified' => $this->getEmailVerified()
+                );
+                break;
+
+            case 'address':
+                $Results = array(
+                    'address' => $this->getAddress()->toArray(
+                        array('id', '__initializer__', '__cloner__', '__isInitialized__', 'lazyPropertiesDefaults')
+                    )
+                );
+                break;
+
+            case 'phone':
+                $Results = array(
+                    'phone_number' => $this->getPhoneNumber(),
+                    'phone_number_verified' => $this->getPhoneNumberVerified()
+                );
+                break;
+
+            default:
+                $Results = array(
+                    'sub' => $this->getSub()
+                );
+        }
+        return $Results;
     }
 }
