@@ -27,12 +27,12 @@ class AccessTokenRepository extends EntityRepository implements AccessTokenInter
         return $token;
     }
 
-    public function setAccessToken($oauthToken, $clientIdentifier, $userEmail, $expires, $scope = null)
+    public function setAccessToken($oauthToken, $clientIdentifier, $user_id, $expires, $scope = null)
     {
         $client = $this->_em->getRepository('Plugin\EccubeApi\Entity\OAuth2\Client')
                             ->findOneBy(array('client_identifier' => $clientIdentifier));
-        $user = $this->_em->getRepository('Plugin\EccubeApi\Entity\OAuth2\User')
-                            ->findOneBy(array('email' => $userEmail));
+        // UserInfo::sub ではなく UserInfo::id が渡ってくることに注意
+        $user = $this->_em->getRepository('Plugin\EccubeApi\Entity\OAuth2\OpenID\UserInfo')->find($user_id);
         $AccessToken = new \Plugin\EccubeApi\Entity\OAuth2\AccessToken();
         $now = new \DateTime();
         $AccessToken->setPropertiesFromArray(array(

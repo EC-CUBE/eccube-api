@@ -34,7 +34,6 @@ class PluginManager extends AbstractPluginManager
     {
         $this->classes = array(
             '\Plugin\EccubeApi\Entity\OAuth2\AuthorizationCode',
-            '\Plugin\EccubeApi\Entity\OAuth2\User',
             '\Plugin\EccubeApi\Entity\OAuth2\Scope',
             '\Plugin\EccubeApi\Entity\OAuth2\OpenID\UserInfo',
             '\Plugin\EccubeApi\Entity\OAuth2\OpenID\PublicKey',

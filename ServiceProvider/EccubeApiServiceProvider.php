@@ -267,11 +267,21 @@ class EccubeApiServiceProvider implements ServiceProviderInterface
                 'authorization_code' => $app['oauth2.openid.granttype.authorization_code'],
                 'client_credentials' => $app['oauth2.granttype.client_credential']
             );
+
+            $responseTypes = array(
+                'token' => $app['oauth2.responsetype.access_token'],
+                'code' => $app['oauth2.responsetype.authorization_code'],
+                'id_token' => $app['oauth2.openid.responsetype.id_token'],
+                'id_token token' => $app['oauth2.openid.responsetype.id_token_token'],
+                'code id_token' => $app['oauth2.openid.responsetype.code_id_token']
+            );
+
             $server = new \OAuth2\Server(array(
-            'client_credentials' => $app['eccube.repository.oauth2.client'],
-            'access_token' => $app['eccube.repository.oauth2.access_token'],
-            'authorization_code' => $app['eccube.repository.oauth2.authorization_code'],
-            ), $oauth2_config, $grantTypes);
+                'client_credentials' => $app['eccube.repository.oauth2.client'],
+                'user_claims' => $app['eccube.repository.oauth2.openid.userinfo'],
+                'access_token' => $app['eccube.repository.oauth2.access_token'],
+                'authorization_code' => $app['eccube.repository.oauth2.authorization_code'],
+            ), $oauth2_config, $grantTypes, $responseTypes);
             return $server;
         });
 

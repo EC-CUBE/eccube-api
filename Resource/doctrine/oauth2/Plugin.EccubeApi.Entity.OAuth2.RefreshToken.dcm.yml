@@ -30,7 +30,7 @@ Plugin\EccubeApi\Entity\OAuth2\RefreshToken:
         name:                 client_id
         referencedColumnName: id
     user:
-      targetEntity: Plugin\EccubeApi\Entity\OAuth2\User
+      targetEntity: Plugin\EccubeApi\Entity\OAuth2\OpenID\UserInfo
       joinColumn:
         name:                 user_id
         referencedColumnName: id

@@ -30,7 +30,7 @@ class RefreshTokenRepository extends EntityRepository implements RefreshTokenInt
                 $refreshToken['client_id'] = null;
             }
             if ($User) {
-                $refreshToken['user_id'] = $User->getId();
+                $refreshToken['user_id'] = $User->getSub();
             } else {
                 $refreshToken['user_id'] = null;
             }
@@ -38,16 +38,14 @@ class RefreshTokenRepository extends EntityRepository implements RefreshTokenInt
         return $refreshToken;
     }
 
-    public function setRefreshToken($refreshToken, $clientIdentifier, $userEmail, $expires, $scope = null)
+    public function setRefreshToken($refreshToken, $clientIdentifier, $user_id, $expires, $scope = null)
     {
         $client = $this->_em->getRepository('Plugin\EccubeApi\Entity\OAuth2\Client')
             ->findOneBy(
                 array('client_identifier' => $clientIdentifier)
             );
-        $user = $this->_em->getRepository('Plugin\EccubeApi\Entity\OAuth2\User')
-            ->findOneBy(
-                array('email' => $userEmail)
-            );
+        // UserInfo::sub ではなく UserInfo::id が渡ってくることに注意
+        $user = $this->_em->getRepository('Plugin\EccubeApi\Entity\OAuth2\OpenID\UserInfo')->find($user_id);
         $RefreshToken = new \Plugin\EccubeApi\Entity\OAuth2\RefreshToken();
         $now = new \DateTime();
         $RefreshToken->setPropertiesFromArray(array(

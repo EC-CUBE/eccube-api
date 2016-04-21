@@ -170,61 +170,6 @@ class OAuth2Controller extends AbstractApiController
 
     public function userInfo(Application $app, Request $request)
     {
-        // OpenID Connect Authorization
-        $scope_reuqired = 'openid';
-        if (!$this->verifyRequest($app, $scope_reuqired)) {
-            return $app['oauth2.server.resource']->getResponse();
-        }
-        $token = $app['oauth2.server.resource']->getAccessTokenData(
-            \OAuth2\Request::createFromGlobals(),
-            $app['oauth2.server.resource']->getResponse()
-        );
-
-        $AccessToken = $app['eccube.repository.oauth2.access_token']->findOneBy(array('token' => $token));
-        if (is_object($AccessToken)) {
-            $Client = $AccessToken->getClient();
-            $UserInfo = null;
-            if ($Client->hasCustomer()) {
-                $Customer = $Client->getCustomer();
-                $UserInfo = $app['eccube.repository.oauth2.openid.userinfo']->findOneBy(array('Customer' => $Customer));
-                $UserInfo->mergeCustomer();
-                $app['orm.em']->flush();
-            } else {
-                $Member = $Client->getMember();
-                $UserInfo = $app['eccube.repository.oauth2.openid.userinfo']->findOneBy(array('Member' => $Member));
-                $UserInfo->mergeMember();
-                $app['orm.em']->flush();
-            }
-            if ($UserInfo) {
-                $Results = $UserInfo->toArrayByClaims();
-
-                if ($this->verifyRequest($app, 'profile')) {
-                    $Results = array_merge($Results, $UserInfo->toArrayByClaims('profile'));
-                }
-                if ($this->verifyRequest($app, 'email')) {
-                    $Results = array_merge($Results, $UserInfo->toArrayByClaims('email'));
-                }
-                if ($this->verifyRequest($app, 'address')) {
-                    $Results = array_merge($Results, $UserInfo->toArrayByClaims('address'));
-                }
-                if ($this->verifyRequest($app, 'phone')) {
-                    $Results = array_merge($Results, $UserInfo->toArrayByClaims('phone'));
-                }
-                $Response = $app['oauth2.server.resource']->getResponse();
-                $statusCode = 200;
-                if (!is_object($Response)) {
-                    return $app->json($Results, $statusCode);
-                }
-                $Response->setData(array('userinfo' => $Results));
-                $Response->setStatusCode($statusCode);
-                return $Response;
-            }
-        }
-        $ErrorResponse = $app->json(
-            array(
-                'error' => 'invalid_token',
-                'error_description' => 'Invalid Value'
-            ), 400);
-        return $ErrorResponse;
+        return $app['oauth2.server.resource']->handleUserInfoRequest(\OAuth2\HttpFoundationBridge\Request::createFromGlobals(), new BridgeResponse());
     }
 }

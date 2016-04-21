@@ -44,6 +44,12 @@
                             </div>
                         </div>
                         <div class="form-group">
+                            <label class="col-sm-2 control-label" for="admin_api_endpoint_userinfo">userinfo エンドポイント</label>
+                            <div class="col-sm-10">
+                                <p>{{ url('oauth2_server_userinfo') }}</p>
+                            </div>
+                        </div>
+                        <div class="form-group">
                             <label class="col-sm-2 control-label" for="admin_api_endpoint_tokeninfo">tokeninfo エンドポイント</label>
                             <div class="col-sm-10">
                                 <p>{{ url('oauth2_server_tokeninfo') }}?id_token=&lt;your id_token&gt;</p>

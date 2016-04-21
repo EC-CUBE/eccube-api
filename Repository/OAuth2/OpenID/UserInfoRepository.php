@@ -13,9 +13,9 @@ use OAuth2\OpenID\Storage\UserClaimsInterface;
  */
 class UserInfoRepository extends EntityRepository implements UserClaimsInterface
 {
-    // TODO implements user claims
-    public function getUserClaims($sub, $scope) {
-        $UserInfo =  $this->findOneBy(array('sub' => $sub));
+    public function getUserClaims($user_id, $scope) {
+        // UserInfo::sub ではなく UserInfo::id が渡ってくることに注意
+        $UserInfo =  $this->find($user_id);
         if (!is_object($UserInfo)) {
             return array();
         }
@@ -29,9 +29,24 @@ class UserInfoRepository extends EntityRepository implements UserClaimsInterface
         $this->getEntityManager()->flush($UserInfo);
         $scopes = array();
         if ($scope) {
-            $scopes = explode(' ', $socpe);
+            $scopes = explode(' ', $scope);
         }
 
-        return $UserInfo->toArray();
+        $Results = $UserInfo->toArrayByClaims();
+
+        if (in_array('profile', $scopes)) {
+            $Results = array_merge($Results, $UserInfo->toArrayByClaims('profile'));
+        }
+        if (in_array('email', $scopes)) {
+            $Results = array_merge($Results, $UserInfo->toArrayByClaims('email'));
+        }
+        if (in_array('address', $scopes)) {
+            $Results = array_merge($Results, $UserInfo->toArrayByClaims('address'));
+        }
+        if (in_array('phone', $scopes)) {
+            $Results = array_merge($Results, $UserInfo->toArrayByClaims('phone'));
+        }
+
+        return $Results;
     }
 }

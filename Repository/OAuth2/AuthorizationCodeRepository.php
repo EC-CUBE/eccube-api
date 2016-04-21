@@ -33,15 +33,15 @@ class AuthorizationCodeRepository extends EntityRepository implements Authorizat
         return $authCode;
     }
 
-    public function setAuthorizationCode($code, $clientIdentifier, $userEmail, $redirectUri, $expires, $scope = null, $id_token = null)
+    public function setAuthorizationCode($code, $clientIdentifier, $user_id, $redirectUri, $expires, $scope = null, $id_token = null)
     {
         $client = $this->_em->getRepository('Plugin\EccubeApi\Entity\OAuth2\Client')
             ->findOneBy(
                 array('client_identifier' => $clientIdentifier)
             );
-        $user = $this->_em->getRepository('Plugin\EccubeApi\Entity\OAuth2\User')
+        $user = $this->_em->getRepository('Plugin\EccubeApi\Entity\OAuth2\OpenID\UserInfo')
             ->findOneBy(
-                array('email' => $userEmail)
+                array('sub' => $user_id)
             );
         $AuthorizationCode = $this->_em->getRepository('Plugin\EccubeApi\Entity\OAuth2\AuthorizationCode')
             ->findOneBy(
