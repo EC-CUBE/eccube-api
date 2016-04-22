@@ -392,4 +392,15 @@ class Client extends \Eccube\Entity\AbstractEntity
     {
         return $this->ClientScopes;
     }
+
+    /**
+     * Client secret の妥当性を検証します.
+     *
+     * @param string $client_secret
+     * @return boolean Client secret が一致する場合 true
+     */
+    public function verifyClientSecret($client_secret)
+    {
+        return $client_secret === $this->getClientSecret();
+    }
 }
