@@ -146,7 +146,7 @@ class ApiClientController
             $UserInfo = $app['eccube.repository.oauth2.openid.userinfo']->findOneBy($searchConditions);
             if (!is_object($UserInfo)) {
                 $UserInfo = new \Plugin\EccubeApi\Entity\OAuth2\OpenID\UserInfo();
-                $UserInfoAdderss = new \Plugin\EccubeApi\Entity\OAuth2\OpenID\UserInfoAddress();
+                $UserInfo->setAddress(new \Plugin\EccubeApi\Entity\OAuth2\OpenID\UserInfoAddress());
             } else {
                 $PublicKey = $app['eccube.repository.oauth2.openid.public_key']->findOneBy(array('UserInfo' => $UserInfo));
             }
@@ -193,18 +193,20 @@ class ApiClientController
             }
 
             if ($is_admin) {
-                $UserInfo->setPreferredUsername($User->getUsername());
                 $UserInfo->setMember($User);
+                $UserInfo->mergeMember();
             } else {
-                $UserInfo->setPreferredUsername($User->getEmail());
                 $UserInfo->setCustomer($User);
+                $UserInfo->mergeCustomer();
             }
-            if (!is_object($UserInfo->getAddress())) {
-                $app['orm.em']->persist($UserInfoAdderss);
-                $app['orm.em']->flush($UserInfoAdderss);
-                $UserInfo->setAddress($UserInfoAdderss);
+
+            if (is_object($UserInfo->getAddress())
+                && is_null($UserInfo->getAddress()->getId())) {
+                $UserInfoAddress = $UserInfo->getAddress();
+                $app['orm.em']->persist($UserInfoAddress);
+                $app['orm.em']->flush($UserInfoAddress);
+                $UserInfo->setAddress($UserInfoAddress);
             }
-            $UserInfo->setUpdatedAt(new \DateTime());
             $app['orm.em']->persist($UserInfo);
             if ($is_new_public_key) {
                 $app['orm.em']->persist($PublicKey);

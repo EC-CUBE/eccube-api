@@ -18,7 +18,6 @@ class Version20160317161732 extends AbstractMigration
     const PUBLIC_KEY = 'OpenID\PublicKey';
     const REFRESH_TOKEN = 'RefreshToken';
     const ACCESS_TOKEN = 'AccessToken';
-    const USER = 'User';
     const CLIENT = 'Client';
     const CLIENT_SCOPE = 'ClientScope';
 
@@ -35,7 +34,6 @@ class Version20160317161732 extends AbstractMigration
             self::PUBLIC_KEY,
             self::REFRESH_TOKEN,
             self::ACCESS_TOKEN,
-            self::USER,
             self::CLIENT,
             self::CLIENT_SCOPE
         );
@@ -82,7 +80,6 @@ class Version20160317161732 extends AbstractMigration
             'plg_oauth2_access_token',
             'plg_oauth2_refresh_token',
             'plg_oauth2_authorization_code',
-            'plg_oauth2_user',
             'plg_oauth2_client',
             'plg_oauth2_openid_public_key',
             'plg_oauth2_openid_userinfo',
@@ -106,7 +103,6 @@ class Version20160317161732 extends AbstractMigration
                 'plg_oauth2_openid_userinfo_id_seq',
                 'plg_oauth2_refresh_token_id_seq',
                 'plg_oauth2_scope_id_seq',
-                'plg_oauth2_user_id_seq'
             );
             foreach ($sequences as $sequence) {
                 $schema->dropSequence($sequence);

@@ -46,6 +46,10 @@
                             <dt><label class="control-label" for="mypage_api_endpoint_token">token エンドポイント</label></dt>
                             <dd>{{ url('oauth2_server_token') }}</dd>
                         </dl>
+                        <dl id="mypage_api_endpoint_userinfo">
+                            <dt><label class="control-label" for="mypage_api_endpoint_userinfo">userinfo エンドポイント</label></dt>
+                            <dd>{{ url('oauth2_server_userinfo') }}</dd>
+                        </dl>
                         <dl id="mypage_api_endpoint_tokeninfo">
                             <dt><label class="control-label" for="mypage_api_endpoint_tokeninfo">tokeninfo エンドポイント</label></dt>
                             <dd>{{ url('oauth2_server_tokeninfo') }}?id_token=&lt;your id_token&gt;</dd>

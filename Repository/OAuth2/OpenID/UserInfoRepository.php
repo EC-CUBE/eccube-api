@@ -13,11 +13,40 @@ use OAuth2\OpenID\Storage\UserClaimsInterface;
  */
 class UserInfoRepository extends EntityRepository implements UserClaimsInterface
 {
-    // TODO implements user claims
     public function getUserClaims($user_id, $scope) {
-        $UsreInfo =  $this->findOneBy(array('sub' => $user_id));
-        // TODO Customer or Member の情報で更新する
-        // TODO selected scope
-        return $UserInfo->toArray();
+        // UserInfo::sub ではなく UserInfo::id が渡ってくることに注意
+        $UserInfo =  $this->find($user_id);
+        if (!is_object($UserInfo)) {
+            return array();
+        }
+        if (is_object($UserInfo->getCustomer())) {
+            $UserInfo->mergeCustomer();
+        } elseif (is_object($UserInfo->getMember())) {
+            $UserInfo->mergeMember();
+        }
+        $UserInfoAddress = $UserInfo->getAddress();
+        $this->getEntityManager()->flush($UserInfoAddress);
+        $this->getEntityManager()->flush($UserInfo);
+        $scopes = array();
+        if ($scope) {
+            $scopes = explode(' ', $scope);
+        }
+
+        $Results = $UserInfo->toArrayByClaims();
+
+        if (in_array('profile', $scopes)) {
+            $Results = array_merge($Results, $UserInfo->toArrayByClaims('profile'));
+        }
+        if (in_array('email', $scopes)) {
+            $Results = array_merge($Results, $UserInfo->toArrayByClaims('email'));
+        }
+        if (in_array('address', $scopes)) {
+            $Results = array_merge($Results, $UserInfo->toArrayByClaims('address'));
+        }
+        if (in_array('phone', $scopes)) {
+            $Results = array_merge($Results, $UserInfo->toArrayByClaims('phone'));
+        }
+
+        return $Results;
     }
 }

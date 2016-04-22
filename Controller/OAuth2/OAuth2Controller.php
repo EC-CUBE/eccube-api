@@ -7,8 +7,9 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use OAuth2\HttpFoundationBridge\Response as BridgeResponse;
 use OAuth2\Encryption\FirebaseJwt as Jwt;
+use Plugin\EccubeApi\Controller\AbstractApiController;
 
-class OAuth2Controller
+class OAuth2Controller extends AbstractApiController
 {
 
     /**
@@ -99,7 +100,7 @@ class OAuth2Controller
         }
 
         $view = 'EccubeApi/Resource/template/mypage/OAuth2/authorization.twig';
-        if ($is_admin) {
+        if ($app->user() instanceof \Eccube\Entity\Member) {
             $view = 'EccubeApi/Resource/template/admin/OAuth2/authorization.twig';
         }
         return $app->render(
@@ -165,5 +166,10 @@ class OAuth2Controller
             return $ErrorResponse;
         }
         return $app->json($payload, 200);
+    }
+
+    public function userInfo(Application $app, Request $request)
+    {
+        return $app['oauth2.server.resource']->handleUserInfoRequest(\OAuth2\HttpFoundationBridge\Request::createFromGlobals(), new BridgeResponse());
     }
 }

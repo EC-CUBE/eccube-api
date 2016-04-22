@@ -99,6 +99,7 @@ class EccubeApiServiceProvider implements ServiceProviderInterface
         $ep = $app['controllers_factory'];
         $ep->match('/OAuth2/'.$app['config']['api.version'].'/token', 'Plugin\EccubeApi\Controller\OAuth2\OAuth2Controller::token')->bind('oauth2_server_token');
         $ep->match('/OAuth2/'.$app['config']['api.version'].'/tokeninfo', 'Plugin\EccubeApi\Controller\OAuth2\OAuth2Controller::tokeninfo')->bind('oauth2_server_tokeninfo');
+        $ep->match('/OAuth2/'.$app['config']['api.version'].'/userinfo', 'Plugin\EccubeApi\Controller\OAuth2\OAuth2Controller::userInfo')->bind('oauth2_server_userinfo');
         $ep->match('/'.trim($app['config']['admin_route'], '/').'/OAuth2/'.$app['config']['api.version'].'/authorize', 'Plugin\EccubeApi\Controller\OAuth2\OAuth2Controller::authorize')->bind('oauth2_server_admin_authorize');
         $ep->match('/'.trim($app['config']['admin_route'], '/').'/OAuth2/'.$app['config']['api.version'].'/authorize/{code}', 'Plugin\EccubeApi\Controller\OAuth2\OAuth2Controller::authorizeOob')->assert('code', '\w+')->bind('oauth2_server_admin_authorize_oob');
 
@@ -266,11 +267,21 @@ class EccubeApiServiceProvider implements ServiceProviderInterface
                 'authorization_code' => $app['oauth2.openid.granttype.authorization_code'],
                 'client_credentials' => $app['oauth2.granttype.client_credential']
             );
+
+            $responseTypes = array(
+                'token' => $app['oauth2.responsetype.access_token'],
+                'code' => $app['oauth2.responsetype.authorization_code'],
+                'id_token' => $app['oauth2.openid.responsetype.id_token'],
+                'id_token token' => $app['oauth2.openid.responsetype.id_token_token'],
+                'code id_token' => $app['oauth2.openid.responsetype.code_id_token']
+            );
+
             $server = new \OAuth2\Server(array(
-            'client_credentials' => $app['eccube.repository.oauth2.client'],
-            'access_token' => $app['eccube.repository.oauth2.access_token'],
-            'authorization_code' => $app['eccube.repository.oauth2.authorization_code'],
-            ), $oauth2_config, $grantTypes);
+                'client_credentials' => $app['eccube.repository.oauth2.client'],
+                'user_claims' => $app['eccube.repository.oauth2.openid.userinfo'],
+                'access_token' => $app['eccube.repository.oauth2.access_token'],
+                'authorization_code' => $app['eccube.repository.oauth2.authorization_code'],
+            ), $oauth2_config, $grantTypes, $responseTypes);
             return $server;
         });
 

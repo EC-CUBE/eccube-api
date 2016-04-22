@@ -45,7 +45,7 @@ class RefreshToken extends \Eccube\Entity\AbstractEntity
     private $client;
 
     /**
-     * @var \Plugin\EccubeApi\Entity\OAuth2\User
+     * @var \Plugin\EccubeApi\Entity\OAuth2\OpenID\UserInfo
      */
     private $user;
 
@@ -201,10 +201,10 @@ class RefreshToken extends \Eccube\Entity\AbstractEntity
     /**
      * Set user
      *
-     * @param \Plugin\EccubeApi\Entity\OAuth2\User $user
+     * @param \Plugin\EccubeApi\Entity\OAuth2\OpenID\UserInfo $user
      * @return RefreshToken
      */
-    public function setUser(\Plugin\EccubeApi\Entity\OAuth2\User $user = null)
+    public function setUser(\Plugin\EccubeApi\Entity\OAuth2\OpenID\UserInfo $user = null)
     {
         $this->user = $user;
 
@@ -214,7 +214,7 @@ class RefreshToken extends \Eccube\Entity\AbstractEntity
     /**
      * Get user
      *
-     * @return \Plugin\EccubeApi\Entity\OAuth2\User
+     * @return \Plugin\EccubeApi\Entity\OAuth2\OpenID\UserInfo
      */
     public function getUser()
     {
