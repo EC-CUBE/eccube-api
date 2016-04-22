@@ -212,6 +212,7 @@ class EccubeApiServiceProvider implements ServiceProviderInterface
         $oauth2_config = $app['config']['oauth2'];
         $oauth2_config['issuer'] = rtrim($app->url('homepage'), '/');
 
+        // Authorization Endpoint 用
         $app['oauth2.server.authorization'] = $app->share(function () use ($app, $oauth2_config) {
             $grantTypes = array(
                 'authorization_code' => $app['oauth2.openid.granttype.authorization_code'],
@@ -236,6 +237,7 @@ class EccubeApiServiceProvider implements ServiceProviderInterface
             return $server;
         });
 
+        // Token Endpoint 用
         $app['oauth2.server.token'] = $app->share(function () use ($app, $oauth2_config) {
 
             $grantTypes = array(
@@ -262,6 +264,7 @@ class EccubeApiServiceProvider implements ServiceProviderInterface
             return $server;
         });
 
+        // Resource 用
         $app['oauth2.server.resource'] = $app->share(function () use ($app, $oauth2_config) {
             $grantTypes = array(
                 'authorization_code' => $app['oauth2.openid.granttype.authorization_code'],

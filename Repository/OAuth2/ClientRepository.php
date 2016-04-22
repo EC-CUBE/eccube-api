@@ -29,7 +29,7 @@ class ClientRepository extends EntityRepository implements ClientCredentialsInte
         $client = $client = $this->findOneBy(array('client_identifier' => $clientIdentifier));
         if ($client) {
             // return $client->verifyClientSecret($clientSecret);
-            return true;        // TODO
+            return true;        // TODO https://github.com/EC-CUBE/eccube-api/issues/29
         }
         return false;
     }

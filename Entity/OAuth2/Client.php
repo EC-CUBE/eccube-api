@@ -291,6 +291,11 @@ class Client extends \Eccube\Entity\AbstractEntity
         return $this->encryption_algorithm;
     }
 
+    /**
+     * Member を保持しているかどうか.
+     *
+     * @return boolean Member を保持している場合 true
+     */
     public function hasMember()
     {
         if (is_object($this->getMember())) {
@@ -299,6 +304,11 @@ class Client extends \Eccube\Entity\AbstractEntity
         return false;
     }
 
+    /**
+     * Customer を保持しているかどうか.
+     *
+     * @return boolean Customer を保持している場合 true
+     */
     public function hasCustomer()
     {
         if (is_object($this->getCustomer())) {
@@ -307,6 +317,11 @@ class Client extends \Eccube\Entity\AbstractEntity
         return false;
     }
 
+    /**
+     * 使用可能な Scope を配列で返します.
+     *
+     * @return array 使用可能な Scope の配列
+     */
     public function getScopes()
     {
         $ClientScopes = $this->getClientScopes();
@@ -317,6 +332,11 @@ class Client extends \Eccube\Entity\AbstractEntity
         return $Scopes;
     }
 
+    /**
+     * 使用可能な scope の文字列を配列で返します.
+     *
+     * @return array 使用可能な scope の文字列の配列
+     */
     public function getScopeAsArray()
     {
         return array_map(function ($Scope) {
@@ -324,6 +344,12 @@ class Client extends \Eccube\Entity\AbstractEntity
         }, $this->getScopes());
     }
 
+    /**
+     * scope が使用可能なチェックします.
+     *
+     * @param string $scope scope の文字列. スペース区切りで複数指定可能です.
+     * @return boolean scope がすべて使用可能な場合 true
+     */
     public function checkScope($scope)
     {
         if ($scope) {
