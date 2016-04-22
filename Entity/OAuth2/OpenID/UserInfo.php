@@ -457,6 +457,11 @@ class UserInfo extends \Eccube\Entity\AbstractEntity
         return $this->birthdate;
     }
 
+    /**
+     * 生年月日を文字列で返します.
+     *
+     * @return string YYYY-MM-DD 形式の文字列
+     */
     public function getBirthdateAsString()
     {
         if ($this->getBirthdate() instanceof \Datetime) {
@@ -580,6 +585,13 @@ class UserInfo extends \Eccube\Entity\AbstractEntity
         return $this->updated_at;
     }
 
+    /**
+     * 更新日時を文字列で返します.
+     *
+     * タイムゾーンは UTC に設定されます.
+     *
+     * @return string RFC3339 形式の文字列
+     */
     public function getUpdatedAtAsString()
     {
         if ($this->getUpdatedAt() instanceof \DateTime) {
@@ -661,6 +673,8 @@ class UserInfo extends \Eccube\Entity\AbstractEntity
 
     /**
      * Customer の内容を自分自身にマージします.
+     *
+     * @return void
      */
     public function mergeCustomer()
     {
@@ -723,6 +737,8 @@ class UserInfo extends \Eccube\Entity\AbstractEntity
 
     /**
      * Member の内容を自分自身にマージします.
+     *
+     * @return void
      */
     public function mergeMember()
     {
@@ -737,10 +753,19 @@ class UserInfo extends \Eccube\Entity\AbstractEntity
         $this->setUpdatedAt($m->getUpdateDate());
     }
 
-    public function toArrayByClaims($claims = null)
+    /**
+     * 指定した scope で要求されたクレームの内容を配列で返します.
+     *
+     * このメソッドで指定可能な scope は profile, email, address, phone です.
+     *
+     * @param string $scope OpenID Connect で用いられる scope の文字列
+     * @return array 要求されたクレームの配列. $scope が null の場合は sub のみを返す
+     * @link http://openid-foundation-japan.github.io/openid-connect-core-1_0.ja.html#ScopeClaims
+     */
+    public function toArrayByClaims($scope = null)
     {
         $Results = array();
-        switch ($claims) {
+        switch ($scope) {
             case 'profile':
                 $Results = array(
                     'name' => $this->getName(),

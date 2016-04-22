@@ -7,14 +7,31 @@ use Symfony\Component\HttpFoundation\Request;
 use OAuth2\HttpFoundationBridge\Response as BridgeResponse;
 use OAuth2\Encryption\FirebaseJwt as Jwt;
 
+/**
+ * ApiClientController
+ *
+ * APIクライアントを管理するためのコントローラ
+ *
+ * @author Kentaro Ohkouchi
+ */
 class ApiClientController
 {
-    const DEFAULT_SCOPE = 'read write openid offline_access';
+
+    /** デフォルトの暗号化方式. */
     const DEFAULT_ENCRYPTION_ALGORITHM = 'RS256';
 
+    /**
+     * API クライアント一覧を表示します.
+     *
+     * @param Application $app
+     * @param Request $request
+     * @param integer $member_id \Eccube\Entity\Member の ID
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
     public function lists(Application $app, Request $request, $member_id = null)
     {
         $searchConditions = array();
+        // ログイン中のユーザーのインスタンスによって処理を切り替える
         if ($app->user() instanceof \Eccube\Entity\Member) {
             $User = $app['eccube.repository.member']->find($member_id);
             $searchConditions = array('Member' => $User);
@@ -36,9 +53,19 @@ class ApiClientController
         ));
     }
 
+    /**
+     * APIクライアントを編集します.
+     *
+     * @param Application $app
+     * @param Request $request
+     * @param integer $member_id \Eccube\Entity\Member の ID
+     * @param integer $client_id APIクライアントID
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
     public function edit(Application $app, Request $request, $member_id = null, $client_id = null)
     {
         $is_admin = false;
+        // ログイン中のユーザーのインスタンスによって処理を切り替える
         if ($app->user() instanceof \Eccube\Entity\Member) {
             $User = $app['eccube.repository.member']->find($member_id);
             $searchConditions = array('Member' => $User);
@@ -50,6 +77,7 @@ class ApiClientController
             $view = 'EccubeApi/Resource/template/mypage/Api/edit.twig';
         }
 
+        // Client が保持する Scope の配列を取得する
         $Client = $app['eccube.repository.oauth2.client']->find($client_id);
         $Scopes = array_map(function ($ClientScope) {
             return $ClientScope->getScope();
@@ -119,9 +147,18 @@ class ApiClientController
         ));
     }
 
+    /**
+     * APIクライアントを新規作成する.
+     *
+     * @param Application $app
+     * @param Request $request
+     * @param integer $member_id \Eccube\Entity\Member の ID
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
     public function newClient(Application $app, Request $request, $member_id = null)
     {
         $is_admin = false;
+        // ログイン中のユーザーのインスタンスによって処理を切り替える
         if ($app->user() instanceof \Eccube\Entity\Member) {
             $User = $app['eccube.repository.member']->find($member_id);
             $searchConditions = array('Member' => $User);
@@ -145,6 +182,7 @@ class ApiClientController
             $PublicKey = null;
             $UserInfo = $app['eccube.repository.oauth2.openid.userinfo']->findOneBy($searchConditions);
             if (!is_object($UserInfo)) {
+                // 該当ユーザーの UserInfo が存在しない場合は生成する
                 $UserInfo = new \Plugin\EccubeApi\Entity\OAuth2\OpenID\UserInfo();
                 $UserInfo->setAddress(new \Plugin\EccubeApi\Entity\OAuth2\OpenID\UserInfoAddress());
             } else {
@@ -178,6 +216,7 @@ class ApiClientController
 
             $is_new_public_key = false;
             if (!is_object($PublicKey)) {
+                // 該当ユーザーの公開鍵が存在しない場合は生成する. UserInfo と 公開鍵は 1:1 となる.
                 $RSAKey = new \phpseclib\Crypt\RSA();
                 $is_new_public_key = true;
                 $keys = $RSAKey->createKey(2048);
@@ -189,6 +228,8 @@ class ApiClientController
 
                 $RSAKey->loadKey($keys['publickey']);
                 $JWK = \JOSE_JWK::encode($RSAKey);
+                // 公開鍵の指紋を UserInfo::sub に設定する. Self-Issued ID Token Validation に準拠した形式
+                // http://openid-foundation-japan.github.io/openid-connect-core-1_0.ja.html#SelfIssuedValidation
                 $UserInfo->setSub($JWK->thumbprint());
             }
 

@@ -9,10 +9,20 @@ use OAuth2\HttpFoundationBridge\Response as BridgeResponse;
 use OAuth2\Encryption\FirebaseJwt as Jwt;
 use Plugin\EccubeApi\Controller\AbstractApiController;
 
+/**
+ * OAuth2.0 Authorization をするためのコントローラ.
+ *
+ * @author Kentaro Ohkouchi
+ */
 class OAuth2Controller extends AbstractApiController
 {
 
     /**
+     * Authorization Endpoint.
+     *
+     * @param Application $app
+     * @param Request $request
+     * @return \OAuth2\HttpFoundationBridge\Response
      * @link http://bshaffer.github.io/oauth2-server-php-docs/grant-types/authorization-code/
      */
     public function authorize(Application $app, Request $request)
@@ -41,13 +51,16 @@ class OAuth2Controller extends AbstractApiController
         );
 
         $is_admin = false;
+        // 認可要求
         if ('POST' === $request->getMethod()) {
             $form->handleRequest($request);
-
+            // 認可要求の妥当性をチェックする(主にURLパラメータ)
             if (!$server->validateAuthorizeRequest($BridgeRequest, $Response)) {
                 return $Response;
             }
 
+            // ログイン中のユーザーと、認可要求された client_id の妥当性をチェックする.
+            // CSRFチェック, Client が使用可能な scope のチェック, ログイン中ユーザーの妥当性チェック
             $Client = $app['eccube.repository.oauth2.client']->findOneBy(array('client_identifier' => $client_id));
             if ($form->isValid() && $app->user() instanceof \Eccube\Entity\Member && $Client->hasMember() && $Client->checkScope($scope)) {
                 $Member = $Client->getMember();
@@ -73,8 +86,10 @@ class OAuth2Controller extends AbstractApiController
             }
 
             // handle the request
+            // TODO $is_authorized == false の場合のエラーメッセージを分けたい
             $Response = $server->handleAuthorizeRequest($BridgeRequest, $Response, $is_authorized, $user_id);
             $content = json_decode($Response->getContent(), true);
+            // redirect_uri に urn:ietf:wg:oauth:2.0:oob が指定されていた場合(ネイティブアプリ等)の処理
             if ($BridgeRequest->get('redirect_uri') == 'urn:ietf:wg:oauth:2.0:oob' && empty($content)) {
                 $ResponseType = $server->getResponseType('code');
                 $res = $ResponseType->getAuthorizeResponse(
@@ -99,6 +114,7 @@ class OAuth2Controller extends AbstractApiController
             $scopes = explode(' ', $scope);
         }
 
+        // 認可リクエスト用の画面を表示
         $view = 'EccubeApi/Resource/template/mypage/OAuth2/authorization.twig';
         if ($app->user() instanceof \Eccube\Entity\Member) {
             $view = 'EccubeApi/Resource/template/admin/OAuth2/authorization.twig';
@@ -118,6 +134,16 @@ class OAuth2Controller extends AbstractApiController
         );
     }
 
+    /**
+     * Authorization code を画面に表示する.
+     *
+     * request_uri に urn:ietf:wg:oauth:2.0:oob が指定された場合はこの画面を表示する.
+     *
+     * @param Application $app
+     * @param Request $request
+     * @param string $code Authorization code の文字列
+     * @return \OAuth2\HttpFoundationBridge\Response
+     */
     public function authorizeOob(Application $app, Request $request, $code = null)
     {
         if ($code === null) {
@@ -138,11 +164,28 @@ class OAuth2Controller extends AbstractApiController
         );
     }
 
+    /**
+     * Token Endpoint.
+     *
+     * @param Application $app
+     * @param Request $request
+     * @return \OAuth2\HttpFoundationBridge\Response
+     */
     public function token(Application $app, Request $request)
     {
         return $app['oauth2.server.token']->handleTokenRequest(\OAuth2\HttpFoundationBridge\Request::createFromGlobals(), new BridgeResponse());
     }
 
+    /**
+     * Tokeninfo Endpoint.
+     *
+     * id_token の妥当性検証のために使用する.
+     *
+     * @param Application $app
+     * @param Request $request
+     * @return \OAuth2\HttpFoundationBridge\Response
+     * @link https://developers.google.com/identity/protocols/OpenIDConnect#validatinganidtoken
+     */
     public function tokenInfo(Application $app, Request $request)
     {
         // TODO validation
@@ -168,6 +211,15 @@ class OAuth2Controller extends AbstractApiController
         return $app->json($payload, 200);
     }
 
+    /**
+     * UserInfo Endpoint.
+     *
+     * このエンドポイントは scope=openid による認可リクエストが必要です.
+     *
+     * @param Application $app
+     * @param Request $request
+     * @return \OAuth2\HttpFoundationBridge\Response
+     */
     public function userInfo(Application $app, Request $request)
     {
         return $app['oauth2.server.resource']->handleUserInfoRequest(\OAuth2\HttpFoundationBridge\Request::createFromGlobals(), new BridgeResponse());
