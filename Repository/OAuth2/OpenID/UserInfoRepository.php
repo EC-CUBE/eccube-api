@@ -27,7 +27,7 @@ class UserInfoRepository extends EntityRepository implements UserClaimsInterface
      */
     public function getUserClaims($user_id, $scope) {
         // UserInfo::sub ではなく UserInfo::id が渡ってくることに注意
-        $UserInfo =  $this->find($user_id);
+        $UserInfo =  $this->findOneBy(array('id' => $user_id));
         if (!is_object($UserInfo)) {
             return array();
         }
