@@ -1,8 +1,9 @@
 <?php
-namespace Plugin\EccubeApi\Tests\Repository;
+namespace Plugin\EccubeApi\Tests\Repository\OAuth2;
 
-use Eccube\Tests\EccubeTestCase;
 use Eccube\Application;
+use Eccube\Tests\EccubeTestCase;
+use Plugin\EccubeApi\Tests\AbstractEccubeApiTestCase;
 use Plugin\EccubeApi\Entity\OAuth2\Client as OAuth2Client;
 use Plugin\EccubeApi\Entity\OAuth2\ClientScope;
 
@@ -12,7 +13,7 @@ use Plugin\EccubeApi\Entity\OAuth2\ClientScope;
  *
  * @author Kentaro Ohkouchi
  */
-class ClientRepositoryTest extends EccubeTestCase
+class ClientRepositoryTest extends AbstractEccubeApiTestCase
 {
     protected $Client;
     protected $Customer;
@@ -23,14 +24,13 @@ class ClientRepositoryTest extends EccubeTestCase
         $faker = $this->getFaker();
         $this->Customer = $this->createCustomer();
 
-        $this->Client = new OAuth2Client();
-        $this->Client->setCustomer($this->Customer);
-        $this->Client->setAppName('test-client-name');
-        $this->Client->setRedirectUri('http://example.com/redirect_uri');
-        $this->Client->setClientIdentifier('test-client-id');
-        $this->Client->setClientSecret('test-client-secret');
-        $this->app['orm.em']->persist($this->Client);
-        $this->app['orm.em']->flush($this->Client);
+        $this->Client = $this->createApiClient(
+            $this->Customer,
+            'test-client-name',
+            'test-client-id',
+            'test-client-secret',
+            'http://example.com/redirect_uri'
+        );
     }
 
     public function testGetClientDetails()
@@ -123,14 +123,7 @@ class ClientRepositoryTest extends EccubeTestCase
         $Scopes = $this->app['eccube.repository.oauth2.scope']->findAll();
         foreach ($Scopes as $Scope) {
             if (in_array($Scope->getScope(), array('openid', 'offline_access'))) {
-                $ClientScope = new ClientScope();
-                $ClientScope->setClientId($this->Client->getId());
-                $ClientScope->setClient($this->Client);
-                $ClientScope->setScopeId($Scope->getId());
-                $ClientScope->setScope($Scope);
-                $this->app['orm.em']->persist($ClientScope);
-                $this->Client->addClientScope($ClientScope);
-                $this->app['orm.em']->flush();
+                $this->addClientScope($this->Client, $Scope->getScope());
             }
         }
         $this->expected = 'openid offline_access';

@@ -60,7 +60,7 @@ before_script:
 
 script:
   # exec phpunit on ec-cube
-  - phpunit app/Plugin/${PLUGIN_CODE}/tests
+  - phpunit -c app/Plugin/${PLUGIN_CODE}/phpunit.xml.dist
 
 after_script:
   # disable plugin

@@ -17,7 +17,6 @@ class AccessTokenRepositoryTest extends EccubeTestCase
     {
         parent::setUp();
 
-
     }
 
     public function testGetBaseInfoWithId()
