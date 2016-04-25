@@ -47,7 +47,10 @@ before_script:
   - sh eccube_install.sh ${DB} none
   # install plugin
   - php app/console plugin:develop install --path=${HOME}/${PLUGIN_CODE}.tar.gz
+  # composer install on plugin
+  - cd app/Plugin/${PLUGIN_CODE} && composer install --dev --no-interaction -o
   # enable plugin
+  - cd ../../../
   - php app/console plugin:develop enable --code=${PLUGIN_CODE}
 
 script:
