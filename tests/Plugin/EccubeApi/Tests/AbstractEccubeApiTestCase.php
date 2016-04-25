@@ -7,6 +7,9 @@ use Eccube\Application;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Plugin\EccubeApi\Entity\OAuth2\Client as OAuth2Client;
 use Plugin\EccubeApi\Entity\OAuth2\ClientScope;
+use Plugin\EccubeApi\Entity\OAuth2\OpenID\UserInfo;
+use Plugin\EccubeApi\Entity\OAuth2\OpenID\UserInfoAddress;
+use Plugin\EccubeApi\Entity\OAuth2\OpenID\PublicKey;
 
 /**
  * AbstractEccubeApiTestCase
@@ -64,5 +67,46 @@ class AbstractEccubeApiTestCase extends EccubeTestCase
         $this->app['orm.em']->persist($ClientScope);
         $Client->addClientScope($ClientScope);
         $this->app['orm.em']->flush();
+    }
+
+    public function createPublicKey(UserInfo $UserInfo = null)
+    {
+        $RSAKey = new \phpseclib\Crypt\RSA();
+        $keys = $RSAKey->createKey(2048);
+        $PublicKey = new PublicKey();
+        $PublicKey->setPublicKey($keys['publickey']);
+        $PublicKey->setPrivateKey($keys['privatekey']);
+        $PublicKey->setEncryptionAlgorithm('RS256');
+
+        $RSAKey->loadKey($keys['publickey']);
+        $JWK = \JOSE_JWK::encode($RSAKey);
+
+        if (is_object($UserInfo)) {
+            $PublicKey->setUserInfo($UserInfo);
+            $UserInfo->setSub($JWK->thumbprint());
+        }
+        $this->app['orm.em']->persist($PublicKey);
+        return $PublicKey;
+    }
+
+    public function createUserInfo(UserInterface $User) {
+        $UserInfo = new UserInfo();
+        $UserInfo->setAddress(new UserInfoAddress());
+        if ($User instanceof \Eccube\Entity\Customer) {
+            $UserInfo->setCustomer($User);
+            $UserInfo->mergeCustomer();
+        } else {
+            $UserInfo->setMember($User);
+            $UserInfo->mergeMember();
+        }
+
+        $UserInfoAddress = $UserInfo->getAddress();
+        $this->app['orm.em']->persist($UserInfoAddress);
+        $this->app['orm.em']->flush($UserInfoAddress);
+        $UserInfo->setAddress($UserInfoAddress);
+        $this->createPublicKey($UserInfo);
+        $this->app['orm.em']->persist($UserInfo);
+        $this->app['orm.em']->flush();
+        return $UserInfo;
     }
 }

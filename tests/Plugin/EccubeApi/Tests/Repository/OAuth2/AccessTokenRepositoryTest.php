@@ -1,9 +1,8 @@
 <?php
 namespace Plugin\EccubeApi\Tests\Repository;
 
-use Eccube\Tests\EccubeTestCase;
 use Eccube\Application;
-use Eccube\Entity\BaseInfo;
+use Plugin\EccubeApi\Tests\AbstractEccubeApiTestCase;
 
 
 /**
@@ -11,12 +10,24 @@ use Eccube\Entity\BaseInfo;
  *
  * @author Kentaro Ohkouchi
  */
-class AccessTokenRepositoryTest extends EccubeTestCase
+class AccessTokenRepositoryTest extends AbstractEccubeApiTestCase
 {
+    protected $Client;
+    protected $Customer;
+
     public function setUp()
     {
         parent::setUp();
+        $faker = $this->getFaker();
+        $this->Customer = $this->createCustomer();
 
+        $this->Client = $this->createApiClient(
+            $this->Customer,
+            'test-client-name',
+            'test-client-id',
+            'test-client-secret',
+            'http://example.com/redirect_uri'
+        );
     }
 
     public function testGetBaseInfoWithId()
