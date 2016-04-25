@@ -11,7 +11,7 @@ php:
   - 5.4
   - 5.5
   - 5.6
-  - 7.0
+# - 7.0
 
 env:
   # plugin code
@@ -22,12 +22,15 @@ env:
     - ECCUBE_VERSION=master DB=mysql USER=root DBNAME=myapp_test DBPASS=' ' DBUSER=root
                             DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres
     - ECCUBE_VERSION=master DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres
+    - ECCUBE_VERSION=master DB=sqlite
     # ec-cube 3.0.9
     - ECCUBE_VERSION=3.0.9 DB=mysql USER=root DBNAME=myapp_test DBPASS=' ' DBUSER=root
     - ECCUBE_VERSION=3.0.9 DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres
+    - ECCUBE_VERSION=3.0.9 DB=sqlite
     # ec-cube 3.0.10
     - ECCUBE_VERSION=3.0.10 DB=mysql USER=root DBNAME=myapp_test DBPASS=' ' DBUSER=root
     - ECCUBE_VERSION=3.0.10 DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres
+    - ECCUBE_VERSION=3.0.10 DB=sqlite
 
 matrix:
   fast_finish: true
@@ -44,7 +47,9 @@ before_script:
   - composer selfupdate
   - composer install --dev --no-interaction -o
   # install ec-cube
-  - sh eccube_install.sh ${DB} none
+  - sh -c "if [ '$DB' = 'mysql' ]; then sh ./eccube_install.sh mysql none; fi"
+  - sh -c "if [ '$DB' = 'pgsql' ]; then sh ./eccube_install.sh pgsql none; fi"
+  - sh -c "if [ '$DB' = 'sqlite' ]; then sh ./eccube_install.sh sqlite3 none; fi"
   # install plugin
   - php app/console plugin:develop install --path=${HOME}/${PLUGIN_CODE}.tar.gz
   # composer install on plugin
