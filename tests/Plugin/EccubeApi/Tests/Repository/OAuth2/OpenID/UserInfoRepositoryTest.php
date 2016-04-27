@@ -195,4 +195,20 @@ class UserInfoRepositoryTest extends AbstractEccubeApiTestCase
         $this->actual = $Claims['phone_number_verified'];
         $this->verify();
     }
+
+    public function testGetUserClaimsWithMember()
+    {
+        $Member = $this->app['eccube.repository.member']->find(2);
+        $this->UserInfo = $this->createUserInfo($Member);
+        $Claims = $this->app['eccube.repository.oauth2.openid.userinfo']->getUserClaims($this->UserInfo->getId(), 'profile');
+        $this->expected = true;
+        $this->actual = is_array($Claims);
+        $this->verify();
+
+        $this->verifyProfile($Claims);
+
+        $this->expected = $Member->getUsername();
+        $this->actual = $Claims['preferred_username'];
+        $this->verify();
+    }
 }
