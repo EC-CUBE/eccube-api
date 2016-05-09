@@ -135,6 +135,10 @@ class AuthorizatoinCodeRepositoryTest extends AbstractEccubeApiTestCase
         $this->expires = time() - 100;
         $this->code = 'code-not-found';
 
-        $this->app['eccube.repository.oauth2.authorization_code']->expireAuthorizationCode($this->code);
+        try {
+            $this->app['eccube.repository.oauth2.authorization_code']->expireAuthorizationCode($this->code);
+        } catch (\Exception $e) {
+            $this->fail($e->getMessage());
+        }
     }
 }
