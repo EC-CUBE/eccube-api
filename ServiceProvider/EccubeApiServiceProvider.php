@@ -82,8 +82,15 @@ class EccubeApiServiceProvider implements ServiceProviderInterface
 
         // api
         $c = $app['controllers_factory'];
+        $c->get('/{table}', 'Plugin\EccubeApi\Controller\EccubeApiCRUDController::findAll')->bind('api_operation_findall')->assert('table', '\w+');
+        $c->post('/{table}', 'Plugin\EccubeApi\Controller\EccubeApiCRUDController::create')->bind('api_operation_create')->assert('table', '\w+');
+        $c->get('/{table}/{id}', 'Plugin\EccubeApi\Controller\EccubeApiCRUDController::find')->bind('api_operation_find')->assert('table', '\w+')->assert('id', '\d+');
+        $c->delete('/{table}/{id}', 'Plugin\EccubeApi\Controller\EccubeApiCRUDController::delete')->bind('api_operation_delete')->assert('table', '\w+')->assert('id', '\d+');
+        $c->put('/{table}/{id}', 'Plugin\EccubeApi\Controller\EccubeApiCRUDController::update')->bind('api_operation_put')->assert('table', '\w+')->assert('id', '\d+');
+
         $c->match('/products', 'Plugin\EccubeApi\Controller\EccubeApiController::products')->bind('api_products');
         $c->get('/products/{id}', 'Plugin\EccubeApi\Controller\EccubeApiController::productsDetail')->bind('api_products_detail')->assert('id', '\d+');
+
         // 認証sample
         $c->get('/productsauthsample/{id}', 'Plugin\EccubeApi\Controller\EccubeApiSampleController::productsDetail')->bind('api_products_auth_sample')->assert('id', '\d+');
         $app->mount($app['config']['api.endpoint'].'/'.$app['config']['api.version'], $c);
