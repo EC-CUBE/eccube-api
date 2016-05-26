@@ -1,0 +1,69 @@
+language: php
+
+sudo: false
+
+cache:
+  directories:
+    - $HOME/.composer/cache
+
+php:
+#  - 5.3
+  - 5.4
+  - 5.5
+  - 5.6
+# - 7.0
+
+env:
+  # plugin code
+  global:
+    PLUGIN_CODE=EccubeApi
+  matrix:
+    # ec-cube master
+    - ECCUBE_VERSION=master DB=mysql USER=root DBNAME=myapp_test DBPASS=' ' DBUSER=root
+                            DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres
+    - ECCUBE_VERSION=master DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres
+    - ECCUBE_VERSION=master DB=sqlite
+    # ec-cube 3.0.9
+    - ECCUBE_VERSION=3.0.9 DB=mysql USER=root DBNAME=myapp_test DBPASS=' ' DBUSER=root
+    - ECCUBE_VERSION=3.0.9 DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres
+    - ECCUBE_VERSION=3.0.9 DB=sqlite
+    # ec-cube 3.0.10
+    - ECCUBE_VERSION=3.0.10 DB=mysql USER=root DBNAME=myapp_test DBPASS=' ' DBUSER=root
+    - ECCUBE_VERSION=3.0.10 DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres
+    - ECCUBE_VERSION=3.0.10 DB=sqlite
+
+matrix:
+  fast_finish: true
+
+before_script:
+  # archive plugin
+  - tar cvzf ${HOME}/${PLUGIN_CODE}.tar.gz ./*
+  # clone ec-cube
+  - git clone https://github.com/EC-CUBE/ec-cube.git
+  - cd ec-cube
+  # checkout version
+  - sh -c "if [ ! '${ECCUBE_VERSION}' = 'master' ]; then  git checkout -b ${ECCUBE_VERSION} refs/tags/${ECCUBE_VERSION}; fi"
+  # update composer
+  - composer selfupdate
+  - composer install --dev --no-interaction -o
+  # install ec-cube
+  - sh -c "if [ '$DB' = 'mysql' ]; then sh ./eccube_install.sh mysql none; fi"
+  - sh -c "if [ '$DB' = 'pgsql' ]; then sh ./eccube_install.sh pgsql none; fi"
+  - sh -c "if [ '$DB' = 'sqlite' ]; then sh ./eccube_install.sh sqlite3 none; fi"
+  # install plugin
+  - php app/console plugin:develop install --path=${HOME}/${PLUGIN_CODE}.tar.gz
+  # composer install on plugin
+  - cd app/Plugin/${PLUGIN_CODE} && composer install --dev --no-interaction -o
+  # enable plugin
+  - cd ../../../
+  - php app/console plugin:develop enable --code=${PLUGIN_CODE}
+
+script:
+  # exec phpunit on ec-cube
+  - phpunit -c app/Plugin/${PLUGIN_CODE}/phpunit.xml.dist
+
+after_script:
+  # disable plugin
+  - php app/console plugin:develop disable --code=${PLUGIN_CODE}
+  # uninstall plugin
+  - php app/console plugin:develop uninstall --code=${PLUGIN_CODE} --uninstall-force=true
