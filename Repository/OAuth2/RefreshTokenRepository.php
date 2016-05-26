@@ -73,7 +73,7 @@ class RefreshTokenRepository extends EntityRepository implements RefreshTokenInt
            'scope'          => $scope,
         ));
         $this->_em->persist($RefreshToken);
-        $this->_em->flush();
+        $this->_em->flush($RefreshToken);
     }
 
     /**
@@ -85,7 +85,9 @@ class RefreshTokenRepository extends EntityRepository implements RefreshTokenInt
     public function unsetRefreshToken($refreshToken)
     {
         $refreshToken = $this->findOneBy(array('refresh_token' => $refreshToken));
-        $this->_em->remove($refreshToken);
-        $this->_em->flush();
+        if ($refreshToken) {
+            $this->_em->remove($refreshToken);
+            $this->_em->flush($refreshToken);
+        }
     }
 }

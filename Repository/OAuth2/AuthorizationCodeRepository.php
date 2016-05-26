@@ -110,9 +110,9 @@ class AuthorizationCodeRepository extends EntityRepository implements Authorizat
     public function expireAuthorizationCode($code)
     {
         $authCode = $this->findOneBy(array('code' => $code));
-        if ($authCode->getExpires()->getTimestamp() <= time()) {
+        if ($authCode && $authCode->getExpires()->getTimestamp() <= time()) {
             $this->_em->remove($authCode);
-            $this->_em->flush();
+            $this->_em->flush($authCode);
         }
     }
 }

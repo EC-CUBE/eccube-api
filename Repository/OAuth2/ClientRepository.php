@@ -25,7 +25,7 @@ class ClientRepository extends EntityRepository implements ClientCredentialsInte
      */
     public function getClientDetails($clientIdentifier)
     {
-        $client = $client = $this->findOneBy(array('client_identifier' => $clientIdentifier));
+        $client = $this->findOneBy(array('client_identifier' => $clientIdentifier));
         if ($client) {
             $client = $client->toArray();
         }
@@ -41,7 +41,7 @@ class ClientRepository extends EntityRepository implements ClientCredentialsInte
      */
     public function checkClientCredentials($clientIdentifier, $clientSecret = NULL)
     {
-        $client = $client = $this->findOneBy(array('client_identifier' => $clientIdentifier));
+        $client = $this->findOneBy(array('client_identifier' => $clientIdentifier));
         if ($client) {
             return $client->verifyClientSecret($clientSecret);
         }
@@ -87,7 +87,7 @@ class ClientRepository extends EntityRepository implements ClientCredentialsInte
      */
     public function getClientScope($clientId)
     {
-        $client = $client = $this->findOneBy(array('client_identifier' => $clientId));
+        $client = $this->findOneBy(array('client_identifier' => $clientId));
         if ($client) {
             $scopes = $client->getScopeAsArray();
             return implode(' ', $scopes);
