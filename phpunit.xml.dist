@@ -23,6 +23,11 @@
     <filter>
         <whitelist processUncoveredFilesFromWhitelist="true">
             <directory suffix=".php">./</directory>
+            <exclude>
+              <directory suffix=".php">./vendor</directory>
+              <directory suffix=".php">./tests</directory>
+              <directory suffix=".php">./Resource</directory>
+            </exclude>
         </whitelist>
     </filter>
 </phpunit>
