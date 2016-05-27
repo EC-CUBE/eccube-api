@@ -97,6 +97,31 @@ class EccubeApiCRUDControllerTest extends AbstractWebTestCase
     public function testFindAll()
     {
         $client = $this->client;
+        $app = $this->app;
+        $this->verifyFind(function ($table_name, $Entity) use ($app, $client) {
+            $crawler = $client->request(
+                'GET',
+                $app->path('api_operation_findall', array('table' => $table_name)));
+            return json_decode($client->getResponse()->getContent(), true);
+        });
+    }
+
+    public function testFind()
+    {
+        $client = $this->client;
+        $app = $this->app;
+        $this->verifyFind(function ($table_name, $Entity) use ($app, $client) {
+            $crawler = $client->request(
+                'GET',
+                $app->path('api_operation_find', array('table' => $table_name, 'id' => $Entity->getId())));
+            $Result = array($table_name => array(json_decode($client->getResponse()->getContent(), true)));
+            return $Result;
+        });
+    }
+
+    protected function verifyFind($callback)
+    {
+        $client = $this->client;
         $metadatas = $this->app['orm.em']->getMetadataFactory()->getAllMetadata();
         foreach ($metadatas as $metadata) {
             $className = $metadata->getName();
@@ -115,14 +140,13 @@ class EccubeApiCRUDControllerTest extends AbstractWebTestCase
                 || $table_name == 'payment_option'
                 || $table_name == 'product_category'
                 || $table_name == 'category_total_count'
+                || $table_name == 'category_count'
             ) {
                 continue;
             }
+            $Entity = $this->app['orm.em']->getRepository($className)->findOneBy(array());
+            $ApiResult = call_user_func($callback, $table_name, $Entity);
 
-            $crawler = $client->request(
-                'GET',
-                $this->app->path('api_operation_findall', array('table' => $table_name)));
-            $ApiResult = json_decode($this->client->getResponse()->getContent(), true);
             $Lists = $ApiResult[$table_name];
             $this->assertTrue(is_array($Lists));
             $idField = '';
@@ -136,12 +160,15 @@ class EccubeApiCRUDControllerTest extends AbstractWebTestCase
             }
 
             foreach ($Lists as $Result) {
-                if (array_key_exists($idField, $Result)) {
-                    $Entity = $this->app['orm.em']->getRepository($className)->find($Result[$idField]);
-                    $this->assertNotNull($Entity);
-                } else {
-                    $Entity = $this->app['orm.em']->getRepository($className)->find($Result['id']);
-                    $this->assertNotNull($Entity);
+                // 対象のデータを取り出す. $Lists が1件のみの場合は先行処理で取得済みなのでスキップする
+                if (count($Lists) > 1) {
+                    if (array_key_exists($idField, $Result)) {
+                        $Entity = $this->app['orm.em']->getRepository($className)->find($Result[$idField]);
+                        $this->assertNotNull($Entity);
+                    } else {
+                        $Entity = $this->app['orm.em']->getRepository($className)->find($Result['id']);
+                        $this->assertNotNull($Entity);
+                    }
                 }
 
                 foreach ($Result as $field => $value) {
@@ -166,71 +193,6 @@ class EccubeApiCRUDControllerTest extends AbstractWebTestCase
                         // FIXME プロパティが見つからないケースがある
                         var_dump($e->getMessage());
                     }
-                }
-            }
-        }
-    }
-
-    public function testFind()
-    {
-        $client = $this->client;
-        $faker = $this->getFaker();
-        $metadatas = $this->app['orm.em']->getMetadataFactory()->getAllMetadata();
-        foreach ($metadatas as $metadata) {
-            $className = $metadata->getName();
-            $Reflect = new \ReflectionClass($className);
-            if (!$Reflect->hasMethod('toArray')) {
-                // TODO API 側でもチェックする
-                continue;
-            }
-            if (strpos($metadata->table['name'], 'dtb_') === false
-                && strpos($metadata->table['name'], 'mtb_') === false) {
-                continue;
-            }
-            $table_name = str_replace(array('dtb_', 'mtb_'), '', $metadata->table['name']);
-            // XXX 複合キーのテーブルは除外
-            if ($table_name == 'block_position'
-                || $table_name == 'payment_option'
-                || $table_name == 'product_category'
-                || $table_name == 'category_total_count'
-                || $table_name == 'category_count'
-            ) {
-                continue;
-            }
-
-            $Entity = $this->app['orm.em']->getRepository($className)->findOneBy(array());
-            $this->assertNotNull($Entity);
-
-            $crawler = $client->request(
-                'GET',
-                $this->app->path('api_operation_find',
-                                 array(
-                                     'table' => $table_name,
-                                     'id' => $Entity->getId()
-                                 ))
-            );
-            $Result = json_decode($this->client->getResponse()->getContent(), true);
-
-            foreach ($Result as $field => $value) {
-                // Proxy Object は Reflection が使用できない
-                if ($Entity instanceof \Doctrine\ORM\Proxy\Proxy) {
-                    continue;
-                }
-                // TODO Datetime などは変換する
-                // XXX 配列が入っている場合がある
-                if (is_object($Result[$field]) || is_array($Result[$field])) {
-                    continue;
-                }
-
-                $Reflect = new \ReflectionClass($Entity);
-                try {
-                    $Property = $Reflect->getProperty($field);
-                    $Property->setAccessible(true);
-                    $this->expected = $Property->getValue($Entity);
-                    $this->actual = $Result[$field];
-                    $this->verify($table_name.': '.$field.' '.print_r($Result[$field], true).' '.$this->expected);
-                } catch (\ReflectionException $e) {
-                    var_dump(get_class($Entity).' '.$e->getMessage().' '.$Result[$field]);
                 }
             }
         }
