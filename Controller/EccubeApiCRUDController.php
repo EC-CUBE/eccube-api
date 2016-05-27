@@ -13,8 +13,7 @@ namespace Plugin\EccubeApi\Controller;
 
 use Eccube\Application;
 use Eccube\Common\Constant;
-use Eccube\Event\EccubeEvents;
-use Eccube\Event\EventArgs;
+use Eccube\Entry\AbstractEntity;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -34,6 +33,7 @@ class EccubeApiCRUDController extends AbstractApiController
                 break;
             }
         }
+
         $Repository = $app['orm.em']->getRepository($className);
         $Results = array();
         // TODO LIMIT, OFFSET が必要
