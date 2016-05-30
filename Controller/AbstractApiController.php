@@ -184,7 +184,7 @@ abstract class AbstractApiController
                 $idField = $mapping['fieldName'];
                 if ($Entity instanceof Proxy) {
                     // Doctrine Proxy の場合は getId() で値を取得
-                    $value = $Entity->getId();
+                    $value = $Entity->getId(); // XXX 複合キーや getId() の無い場合の対応
                 } else {
                     // Entity の場合はリフレクションで値を取得
                     $PropReflect = new \ReflectionClass($Entity);
