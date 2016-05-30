@@ -3,6 +3,7 @@
 namespace Plugin\EccubeApi\Controller;
 
 use Eccube\Application;
+use Eccube\Entity\AbstractEntity;
 use Symfony\Component\HttpFoundation\Request;
 use OAuth2\HttpFoundationBridge\Response as BridgeResponse;
 
@@ -93,5 +94,86 @@ abstract class AbstractApiController
         }
 
         return array('errors' => $errors);
+    }
+
+    /**
+     * テーブル名から Metadata を検索する.
+     *
+     * テーブル名の, `dtb_`, `mtb_` といった prefix は省略可能.
+     *
+     * @param Application $app
+     * @param string $table テーブル名.
+     * @return \Doctrine\Common\Persistence\Mapping\ClassMetadata
+     */
+    protected function findMetadata(Application $app, $table)
+    {
+        $metadatas = $app['orm.em']->getMetadataFactory()->getAllMetadata();
+        foreach ($metadatas as $metadata) {
+            $table_name = $metadata->table['name'];
+            if ($table == $table_name
+                || $table == $this->shortTableName($table_name)) {
+                return $metadata;
+            }
+        }
+        return  null;
+    }
+
+    /**
+     * `dtb_`, `mtb_` といった prefix を除いたテーブル名を返す.
+     *
+     * @param string $table テーブル名
+     * @return string prefix を除いたテーブル名
+     */
+    protected function shortTableName($table)
+    {
+        return str_replace(array('dtb_', 'mtb_'), '', $table);
+    }
+
+    /**
+     * JSON Respoinse 用の配列を返します.
+     *
+     * @see AbstractEntity::toArray()
+     */
+    protected function entityToArray(Application $app, AbstractEntity $Entity, array $excludeAttribute = array('__initializer__', '__cloner__', '__isInitialized__'))
+    {
+        $Reflect = new \ReflectionClass($Entity);
+        $Properties = $Reflect->getProperties();
+        $Results = array();
+        foreach ($Properties as $Property) {
+            $Property->setAccessible(true);
+            $name = $Property->getName();
+            if (in_array($name, $excludeAttribute)) {
+                continue;
+            }
+            $PropertyValue = $Property->getValue($Entity);
+            if ($PropertyValue instanceof \DateTime) {
+                $Results[$name] = $PropertyValue->format(\Datetime::ATOM);
+            } elseif ($PropertyValue instanceof AbstractEntity) {
+                // Entity の場合は [id => value] の配列を返す
+                $metadata = $app['orm.em']->getMetadataFactory()->getMetadataFor(get_class($PropertyValue));
+                $idField = '';
+                foreach ($metadata->fieldMappings as $field => $mapping) {
+                    if (array_key_exists('id', $mapping) === true && $mapping['id'] === true) {
+                        $idField = $mapping['fieldName'];
+                        break;
+                    }
+                }
+                if ($PropertyValue instanceof \Doctrine\ORM\Proxy\Proxy) {
+                    // Doctrine のキャッシュの場合は getId() で値を取得
+                    $value = $PropertyValue->getId();
+                } else {
+                    // Entity の場合はリフレクションで値を取得
+                    $PropReflect = new \ReflectionClass($PropertyValue);
+
+                    $IdProperty = $PropReflect->getProperty($idField);
+                    $IdProperty->setAccessible(true);
+                    $value = $IdProperty->getValue($PropertyValue);
+                }
+                $Results[$name] = array($idField => $value);
+            } else {
+                $Results[$name] = $PropertyValue;
+            }
+        }
+        return $Results;
     }
 }

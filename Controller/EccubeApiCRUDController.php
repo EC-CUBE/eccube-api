@@ -33,7 +33,7 @@ class EccubeApiCRUDController extends AbstractApiController
         $Results = array();
         // TODO LIMIT, OFFSET が必要
         foreach ($Repository->findAll() as $Entity) {
-            $Results[] = $Entity->toArray();
+            $Results[] = $this->entityToArray($app, $Entity);
         }
 
         return $this->getWrapperedResponseBy($app, array($table => $Results));
@@ -50,7 +50,7 @@ class EccubeApiCRUDController extends AbstractApiController
         $Repository = $app['orm.em']->getRepository($className);
         $Results = $Repository->find($id);
 
-        return $this->getWrapperedResponseBy($app, array($table => $Results->toArray()));
+        return $this->getWrapperedResponseBy($app, array($table => $this->entityToArray($app, $Results)));
     }
 
     public function create(Application $app, Request $request, $table = null)
@@ -116,38 +116,5 @@ class EccubeApiCRUDController extends AbstractApiController
         }
 
         return $this->getWrapperedResponseBy($app, null, 204);
-    }
-
-    /**
-     * テーブル名から Metadata を検索する.
-     *
-     * テーブル名の, `dtb_`, `mtb_` といった prefix は省略可能.
-     *
-     * @param Application $app
-     * @param string $table テーブル名.
-     * @return \Doctrine\Common\Persistence\Mapping\ClassMetadata
-     */
-    protected function findMetadata(Application $app, $table)
-    {
-        $metadatas = $app['orm.em']->getMetadataFactory()->getAllMetadata();
-        foreach ($metadatas as $metadata) {
-            $table_name = $metadata->table['name'];
-            if ($table == $table_name
-                || $table == $this->shortTableName($table_name)) {
-                return $metadata;
-            }
-        }
-        return  null;
-    }
-
-    /**
-     * `dtb_`, `mtb_` といった prefix を除いたテーブル名を返す.
-     *
-     * @param string $table テーブル名
-     * @return string prefix を除いたテーブル名
-     */
-    protected function shortTableName($table)
-    {
-        return str_replace(array('dtb_', 'mtb_'), '', $table);
     }
 }
