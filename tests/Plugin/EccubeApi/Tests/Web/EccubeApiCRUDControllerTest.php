@@ -166,9 +166,7 @@ class EccubeApiCRUDControllerTest extends AbstractWebTestCase
                         $Entity = $this->app['orm.em']->getRepository($className)->find($Result[$idField]);
                         $this->assertNotNull($Entity);
                     } else {
-                        continue;
-                        // XXX lazyPropertiesDefaults が返ってきて取得できない場合がある
-                        dump($Result);
+                        // XXX Proxy の場合は lazyPropertiesDefaults が返ってきて取得できない場合がある
                         $Entity = $this->app['orm.em']->getRepository($className)->find($Result['id']);
                         $this->assertNotNull($Entity);
                     }

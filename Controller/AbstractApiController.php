@@ -4,6 +4,8 @@ namespace Plugin\EccubeApi\Controller;
 
 use Eccube\Application;
 use Eccube\Entity\AbstractEntity;
+use Doctrine\ORM\PersistentCollection;
+use Doctrine\ORM\Proxy\Proxy;
 use Symfony\Component\HttpFoundation\Request;
 use OAuth2\HttpFoundationBridge\Response as BridgeResponse;
 
@@ -150,30 +152,52 @@ abstract class AbstractApiController
                 $Results[$name] = $PropertyValue->format(\Datetime::ATOM);
             } elseif ($PropertyValue instanceof AbstractEntity) {
                 // Entity の場合は [id => value] の配列を返す
-                $metadata = $app['orm.em']->getMetadataFactory()->getMetadataFor(get_class($PropertyValue));
-                $idField = '';
-                foreach ($metadata->fieldMappings as $field => $mapping) {
-                    if (array_key_exists('id', $mapping) === true && $mapping['id'] === true) {
-                        $idField = $mapping['fieldName'];
-                        break;
-                    }
+                $Results[$name] = $this->getEntityIdentifierAsArray($app, $PropertyValue);
+            } elseif ($PropertyValue instanceof PersistentCollection) {
+                // Collection の場合は ID を持つオブジェクトの配列を返す
+                $Collections = $PropertyValue->getValues();
+                foreach ($Collections as $Child) {
+                    $Results[$name][] = $this->getEntityIdentifierAsArray($app, $Child);
                 }
-                if ($PropertyValue instanceof \Doctrine\ORM\Proxy\Proxy) {
-                    // Doctrine のキャッシュの場合は getId() で値を取得
-                    $value = $PropertyValue->getId();
-                } else {
-                    // Entity の場合はリフレクションで値を取得
-                    $PropReflect = new \ReflectionClass($PropertyValue);
-
-                    $IdProperty = $PropReflect->getProperty($idField);
-                    $IdProperty->setAccessible(true);
-                    $value = $IdProperty->getValue($PropertyValue);
-                }
-                $Results[$name] = array($idField => $value);
             } else {
-                $Results[$name] = $PropertyValue;
+                if ($Entity instanceof Proxy) {
+                    // XXX Proxy の場合はリフレクションが使えないため id を決め打ちで取得する
+                    $Results['id'] = $Entity->getId();
+                } else {
+                    $Results[$name] = $PropertyValue;
+                }
             }
         }
         return $Results;
     }
+
+    /**
+     * Entity のID情報を配列で返します.
+     */
+    protected function getEntityIdentifierAsArray(Application $app, AbstractEntity $Entity)
+    {
+        $metadata = $app['orm.em']->getMetadataFactory()->getMetadataFor(get_class($Entity));
+        $idField = '';
+        $Result = array();
+        foreach ($metadata->fieldMappings as $field => $mapping) {
+            if (array_key_exists('id', $mapping) === true && $mapping['id'] === true) {
+                $idField = $mapping['fieldName'];
+                if ($Entity instanceof Proxy) {
+                    // Doctrine Proxy の場合は getId() で値を取得
+                    $value = $Entity->getId();
+                } else {
+                    // Entity の場合はリフレクションで値を取得
+                    $PropReflect = new \ReflectionClass($Entity);
+
+                    $IdProperty = $PropReflect->getProperty($idField);
+                    $IdProperty->setAccessible(true);
+                    $value = $IdProperty->getValue($Entity);
+                }
+                $Result[$idField] = $value;
+            }
+        }
+
+        return $Result;
+    }
+
 }
