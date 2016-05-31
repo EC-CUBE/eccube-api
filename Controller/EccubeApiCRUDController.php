@@ -14,6 +14,7 @@ namespace Plugin\EccubeApi\Controller;
 use Eccube\Application;
 use Eccube\Common\Constant;
 use Eccube\Entry\AbstractEntity;
+use Plugin\EccubeApi\Util\EntityUtil;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -23,7 +24,7 @@ class EccubeApiCRUDController extends AbstractApiController
 
     public function findAll(Application $app, Request $request, $table = null)
     {
-        $metadata = $this->findMetadata($app, $table);
+        $metadata = EntityUtil::findMetadata($app, $table);
         if (!is_object($metadata)) {
             throw new NotFoundHttpException();
         }
@@ -33,7 +34,7 @@ class EccubeApiCRUDController extends AbstractApiController
         $Results = array();
         // TODO LIMIT, OFFSET が必要
         foreach ($Repository->findAll() as $Entity) {
-            $Results[] = $this->entityToArray($app, $Entity);
+            $Results[] = EntityUtil::entityToArray($app, $Entity);
         }
 
         return $this->getWrapperedResponseBy($app, array($table => $Results));
@@ -41,7 +42,7 @@ class EccubeApiCRUDController extends AbstractApiController
 
     public function find(Application $app, Request $request, $table = null, $id = 0)
     {
-        $metadata = $this->findMetadata($app, $table);
+        $metadata = EntityUtil::findMetadata($app, $table);
         if (!is_object($metadata)) {
             throw new NotFoundHttpException();
         }
@@ -50,12 +51,13 @@ class EccubeApiCRUDController extends AbstractApiController
         $Repository = $app['orm.em']->getRepository($className);
         $Results = $Repository->find($id);
 
-        return $this->getWrapperedResponseBy($app, array($table => $this->entityToArray($app, $Results)));
+        return $this->getWrapperedResponseBy($app, array($table => EntityUtil::entityToArray($app, $Results)));
     }
 
     public function create(Application $app, Request $request, $table = null)
     {
-        $metadata = $this->findMetadata($app, $table);
+        $this->verifyRequest($app);
+        $metadata = EntityUtil::findMetadata($app, $table);
         if (!is_object($metadata)) {
             throw new NotFoundHttpException();
         }
@@ -73,15 +75,16 @@ class EccubeApiCRUDController extends AbstractApiController
                                                               'id' => $Entity->getId()
                                                           )
             ));
-            return $this->getWrapperedResponseBy($app, null, 201);
+            return $this->getWrapperedResponseBy($app, array(), 201);
         } catch (\Exception $e) {
+            $this->addErrors($app, 400, $e->getMessage());
             return $this->getWrapperedResponseBy($app, $this->getErrors(), 400);
         }
     }
 
     public function update(Application $app, Request $request, $table = null, $id = 0)
     {
-        $metadata = $this->findMetadata($app, $table);
+        $metadata = EntityUtil::findMetadata($app, $table);
         if (!is_object($metadata)) {
             throw new NotFoundHttpException();
         }
@@ -100,7 +103,7 @@ class EccubeApiCRUDController extends AbstractApiController
 
     public function delete(Application $app, Request $request, $table = null, $id = 0)
     {
-        $metadata = $this->findMetadata($app, $table);
+        $metadata = EntityUtil::findMetadata($app, $table);
         if (!is_object($metadata)) {
             throw new NotFoundHttpException();
         }
