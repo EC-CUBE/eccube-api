@@ -106,15 +106,26 @@ class EccubeApiCRUDControllerTest extends AbstractWebTestCase
         });
     }
 
-    public function testFind()
+    public function testFindOnce()
     {
         $client = $this->client;
         $app = $this->app;
         $this->verifyFind(function ($table_name, $Entity) use ($app, $client) {
+            // XXX 複合キーのテーブルは除外
+            if ($table_name == 'block_position'
+                || $table_name == 'payment_option'
+                || $table_name == 'product_category'
+                || $table_name == 'category_total_count'
+                || $table_name == 'category_count'
+            ) {
+                return array($table_name => array());
+            }
+
             $crawler = $client->request(
                 'GET',
                 $app->path('api_operation_find', array('table' => $table_name, 'id' => $Entity->getId())));
-            $Result = array($table_name => array(json_decode($client->getResponse()->getContent(), true)));
+            $content = json_decode($client->getResponse()->getContent(), true);
+            $Result = array($table_name => array($content[$table_name]));
             return $Result;
         });
     }
@@ -127,63 +138,67 @@ class EccubeApiCRUDControllerTest extends AbstractWebTestCase
             $className = $metadata->getName();
             $Reflect = new \ReflectionClass($className);
             if (!$Reflect->hasMethod('toArray')) {
-                // TODO API 側でもチェックする
+                // FIXME https://github.com/EC-CUBE/ec-cube/pull/1576
                 continue;
             }
+            // $this->assertTrue($Reflect->hasMethod('toArray'), 'toArray() が存在するかどうか');
+
             if (strpos($metadata->table['name'], 'dtb_') === false
                 && strpos($metadata->table['name'], 'mtb_') === false) {
+                // dtb_ or mtb_ 以外のテーブルは除外
                 continue;
             }
             $table_name = str_replace(array('dtb_', 'mtb_'), '', $metadata->table['name']);
-            // XXX 複合キーのテーブルは除外
-            if ($table_name == 'block_position'
-                || $table_name == 'payment_option'
-                || $table_name == 'product_category'
-                || $table_name == 'category_total_count'
-                || $table_name == 'category_count'
-            ) {
-                continue;
-            }
+
+            // Entity のデータチェックのため、1件だけ取得する
             $Entity = $this->app['orm.em']->getRepository($className)->findOneBy(array());
             $ApiResult = call_user_func($callback, $table_name, $Entity);
 
             $Lists = $ApiResult[$table_name];
             $this->assertTrue(is_array($Lists));
-            $idField = '';
-            $idValue = '';
+            $idFields = array();
+            // IDのキー名を取得
             foreach ($metadata->fieldMappings as $field => $value) {
                 if (array_key_exists('id', $value) && $value['id'] === true) {
-                    $idField = $value['fieldName'];
-                    $idValue = $value;
-                    break;
+                    $idFields[] = $value['fieldName'];
                 }
             }
 
             foreach ($Lists as $Result) {
-                // 対象のデータを取り出す. $Lists が1件のみの場合は先行処理で取得済みなのでスキップする
-                if (count($Lists) > 1) {
-                    if (array_key_exists($idField, $Result)) {
-                        $Entity = $this->app['orm.em']->getRepository($className)->find($Result[$idField]);
-                        $this->assertNotNull($Entity);
-                    } else {
-                        // XXX Proxy の場合は lazyPropertiesDefaults が返ってきて取得できない場合がある
-                        $Entity = $this->app['orm.em']->getRepository($className)->find($Result['id']);
-                        $this->assertNotNull($Entity);
-                    }
+                if (count($idFields) < 2 && array_key_exists($idFields[0], $Result)) {
+                    $Entity = $this->app['orm.em']->getRepository($className)->find($Result[$idFields[0]]);
+                    $this->assertNotNull($Entity);
+                } else {
+                    // ここは複合キーの結果が入ってくる
+                    continue;
+                    // TODO 複合キーの場合の対応
+                    // $Entity = $this->app['orm.em']->getRepository($className)->find($Result['id']);
+                    // $this->assertNotNull($Entity);
                 }
 
                 foreach ($Result as $field => $value) {
-                    // Proxy Object は Reflection が使用できない
+                    $Reflect = new \ReflectionClass($Entity);
                     if ($Entity instanceof \Doctrine\ORM\Proxy\Proxy) {
-                        continue;
+                        // Proxy の場合は親クラスを取得
+                        $Reflect = $Reflect->getParentClass();
                     }
-                    // TODO Datetime などは変換する
-                    // XXX 配列が入っている場合がある
-                    if (is_object($Result[$field]) || is_array($Result[$field])) {
+
+                    // 値が配列の場合は、オブジェクトのIDか PersistentCollection の結果が格納されている
+                    if (is_array($value)) {
+                        foreach ($value as $key => $child) {
+                            $this->assertRegExp('/(id$|[0-9]+)/', (string)$key, 'キーは id を含む文字列または数値');
+                            if (is_array($child)) {
+                                foreach ($child as $child_key => $child_value) {
+                                    $this->assertRegExp('/(id$|[0-9]+)/', (string)$child_key, 'キーは id を含む文字列または数値');
+                                    $this->assertTrue(is_numeric($child_value), 'IDの値は数値');
+                                }
+                            } else {
+                                $this->assertTrue(is_numeric($child), 'IDの値は数値');
+                            }
+                        }
                         continue;
                     }
 
-                    $Reflect = new \ReflectionClass($Entity);
                     try {
                         $Property = $Reflect->getProperty($field);
                         $Property->setAccessible(true);
@@ -194,8 +209,7 @@ class EccubeApiCRUDControllerTest extends AbstractWebTestCase
                         $this->actual = $Result[$field];
                         $this->verify($table_name.': '.$field.' '.print_r($Result, true));
                     } catch (\ReflectionException $e) {
-                        // FIXME プロパティが見つからないケースがある
-                        var_dump($e->getMessage());
+                        $this->fail($Reflect->getName().' '.$e->getMessage());
                     }
                 }
             }

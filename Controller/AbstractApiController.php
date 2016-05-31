@@ -139,6 +139,9 @@ abstract class AbstractApiController
     protected function entityToArray(Application $app, AbstractEntity $Entity, array $excludeAttribute = array('__initializer__', '__cloner__', '__isInitialized__'))
     {
         $Reflect = new \ReflectionClass($Entity);
+        if ($Entity instanceof Proxy) {
+            $Reflect = $Reflect->getParentClass();
+        }
         $Properties = $Reflect->getProperties();
         $Results = array();
         foreach ($Properties as $Property) {
@@ -160,12 +163,7 @@ abstract class AbstractApiController
                     $Results[$name][] = $this->getEntityIdentifierAsArray($app, $Child);
                 }
             } else {
-                if ($Entity instanceof Proxy) {
-                    // XXX Proxy の場合はリフレクションが使えないため id を決め打ちで取得する
-                    $Results['id'] = $Entity->getId();
-                } else {
-                    $Results[$name] = $PropertyValue;
-                }
+                $Results[$name] = $PropertyValue;
             }
         }
         return $Results;
@@ -182,18 +180,14 @@ abstract class AbstractApiController
         foreach ($metadata->fieldMappings as $field => $mapping) {
             if (array_key_exists('id', $mapping) === true && $mapping['id'] === true) {
                 $idField = $mapping['fieldName'];
+                $PropReflect = new \ReflectionClass($Entity);
                 if ($Entity instanceof Proxy) {
-                    // Doctrine Proxy の場合は getId() で値を取得
-                    $value = $Entity->getId(); // XXX 複合キーや getId() の無い場合の対応
-                } else {
-                    // Entity の場合はリフレクションで値を取得
-                    $PropReflect = new \ReflectionClass($Entity);
-
-                    $IdProperty = $PropReflect->getProperty($idField);
-                    $IdProperty->setAccessible(true);
-                    $value = $IdProperty->getValue($Entity);
+                    // Doctrine Proxy の場合は親クラスを取得
+                    $PropReflect = $PropReflect->getParentClass();
                 }
-                $Result[$idField] = $value;
+                $IdProperty = $PropReflect->getProperty($idField);
+                $IdProperty->setAccessible(true);
+                $Result[$idField] = $IdProperty->getValue($Entity);
             }
         }
 
