@@ -9,6 +9,7 @@ use Eccube\Entity\CustomerFavoriteProduct;
 use Eccube\Entity\ProductTag;
 use Eccube\Entity\AuthorityRole;
 use Eccube\Tests\Web\AbstractWebTestCase;
+use Plugin\EccubeApi\Util\EntityUtil;
 
 class EccubeApiCRUDControllerTest extends AbstractWebTestCase
 {
@@ -126,8 +127,68 @@ class EccubeApiCRUDControllerTest extends AbstractWebTestCase
                 $app->path('api_operation_find', array('table' => $table_name, 'id' => $Entity->getId())));
             $content = json_decode($client->getResponse()->getContent(), true);
             $Result = array($table_name => array($content[$table_name]));
+
             return $Result;
         });
+    }
+
+    public function testCreate()
+    {
+        $client = $this->client;
+        $metadatas = $this->app['orm.em']->getMetadataFactory()->getAllMetadata();
+        foreach ($metadatas as $metadata) {
+            $className = $metadata->getName();
+            if (strpos($metadata->table['name'], 'dtb_') === false
+                && strpos($metadata->table['name'], 'mtb_') === false) {
+                // dtb_ or mtb_ 以外のテーブルは除外
+                continue;
+            }
+            if ($metadata->table['name'] != 'mtb_pref') {
+                continue;       // XXX テスト用
+            }
+
+            $table_name = EntityUtil::shortTableName($metadata->table['name']);
+            // XXX 複合キーのテーブルは除外
+            if ($table_name == 'block_position'
+                || $table_name == 'payment_option'
+                || $table_name == 'product_category'
+                || $table_name == 'category_total_count'
+                || $table_name == 'category_count'
+            ) {
+                continue;
+            }
+
+            $Entity = $this->app['orm.em']->getRepository($className)->findOneBy(array());
+            $arrayEntity = EntityUtil::entityToArray($this->app, $Entity);
+            if (array_key_exists('id', $arrayEntity)) {
+                if (strpos($metadata->table['name'], 'mtb_') !== false) {
+                    $arrayEntity['id'] = 999;
+                } else {
+                    unset($arrayEntity['id']);
+                }
+            }
+
+            $url = $this->app->url('api_operation_create', array('table' => $table_name));
+            $crawler = $this->client->request(
+                'POST',
+                $url,
+                array(),
+                array(),
+                array(
+                    'CONTENT_TYPE' => 'application/json',
+                ),
+                json_encode($arrayEntity)
+            );
+
+            $this->assertTrue($this->client->getResponse()->isSuccessful());
+            $this->expected = 201;
+            $this->actual = $this->client->getResponse()->getStatusCode();
+            $this->verify();
+            var_dump($client->getResponse()->headers->get('Location'));
+            $this->assertRegExp('/'.preg_quote($url, '/').'\/[0-9]+/',
+                                $client->getResponse()->headers->get('Location'),
+            'Location ヘッダが一致するか？');
+        }
     }
 
     protected function verifyFind($callback)
