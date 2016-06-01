@@ -134,6 +134,7 @@ class EccubeApiCRUDControllerTest extends AbstractWebTestCase
 
     public function testCreate()
     {
+        $faker = $this->getFaker();
         $client = $this->client;
         $metadatas = $this->app['orm.em']->getMetadataFactory()->getAllMetadata();
         foreach ($metadatas as $metadata) {
@@ -142,9 +143,6 @@ class EccubeApiCRUDControllerTest extends AbstractWebTestCase
                 && strpos($metadata->table['name'], 'mtb_') === false) {
                 // dtb_ or mtb_ 以外のテーブルは除外
                 continue;
-            }
-            if ($metadata->table['name'] != 'mtb_pref') {
-                continue;       // XXX テスト用
             }
 
             $table_name = EntityUtil::shortTableName($metadata->table['name']);
@@ -159,6 +157,20 @@ class EccubeApiCRUDControllerTest extends AbstractWebTestCase
             }
 
             $Entity = $this->app['orm.em']->getRepository($className)->findOneBy(array());
+            switch ($table_name) {
+                case 'customer':
+                    $Entity->setSecretKey($this->app['eccube.repository.customer']->getUniqueSecretKey($this->app));
+                    break;
+                case 'block':
+                    $Entity->setFileName($faker->word);
+                    break;
+                case 'product_stock':
+                    $Entity->setProductClass(null);
+                    break;
+
+                default:
+            }
+
             $arrayEntity = EntityUtil::entityToArray($this->app, $Entity);
             if (array_key_exists('id', $arrayEntity)) {
                 if (strpos($metadata->table['name'], 'mtb_') !== false) {
@@ -180,11 +192,11 @@ class EccubeApiCRUDControllerTest extends AbstractWebTestCase
                 json_encode($arrayEntity)
             );
 
-            $this->assertTrue($this->client->getResponse()->isSuccessful());
             $this->expected = 201;
             $this->actual = $this->client->getResponse()->getStatusCode();
-            $this->verify();
-            var_dump($client->getResponse()->headers->get('Location'));
+            $this->verify($this->client->getResponse()->getContent());
+            $this->assertTrue($this->client->getResponse()->isSuccessful());
+
             $this->assertRegExp('/'.preg_quote($url, '/').'\/[0-9]+/',
                                 $client->getResponse()->headers->get('Location'),
             'Location ヘッダが一致するか？');

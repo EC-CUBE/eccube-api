@@ -110,4 +110,71 @@ class EntityUtil extends BaseEntityUtil
 
         return $Result;
     }
+
+    /**
+     * srcProperties のフィールドを destEntity にコピーします.
+     */
+    public static function copyRelatePropertiesFromArray(Application $app, AbstractEntity $destEntity, array $srcProperties, array $excludeAttribute = array('__initializer__', '__cloner__', '__isInitialized__'))
+    {
+        $metadata = $app['orm.em']->getMetadataFactory()->getMetadataFor(get_class($destEntity));
+        $fieldMappings = $metadata->fieldMappings;
+        $associationMappings = $metadata->associationMappings;
+        $reflClass = $metadata->reflClass;
+        $associationProperties = array_keys($associationMappings);
+
+        $Reflect = new \ReflectionClass($destEntity);
+        if ($destEntity instanceof Proxy) {
+            // Doctrine Proxy の場合は親クラスを取得
+            $Reflect = $Reflect->getParentClass();
+        }
+        $Properties = $Reflect->getProperties();
+        foreach ($Properties as $Property) {
+            $Property->setAccessible(true);
+            $name = $Property->getName();
+
+            if (in_array($name, $excludeAttribute) || !array_key_exists($name, $srcProperties)) {
+                continue;
+            }
+
+            // 外部キーのオブジェクトをセットする
+            if (in_array($name, $associationProperties)) {
+                if (!is_array($srcProperties[$name])) {
+                    // 値が空の場合はスキップ
+                    continue;
+                }
+
+                if (array_values($srcProperties[$name]) === $srcProperties[$name]) { // 配列 or 連想配列のチェック
+                    // 配列の場合は Collection
+                    $Collections = array();
+                    foreach ($srcProperties[$name] as $manyProperty) {
+                        $assocEntity = $app['orm.em']->getRepository($associationMappings[$name]['targetEntity'])->findOneBy($manyProperty);
+                        $Collections[] = $assocEntity;
+                    }
+                    $Property->setValue($destEntity, $Collections);
+                    continue;
+                } else {
+                    // 連想配列の場合は Entity
+                    $assocEntity = $app['orm.em']->getRepository($associationMappings[$name]['targetEntity'])->find($srcProperties[$name]);
+                    $Property->setValue($destEntity, $assocEntity);
+                }
+                // TODO 複合キーの対応
+                continue;
+            }
+
+            if (!array_key_exists($name, $fieldMappings)) {
+                continue;
+            }
+
+            // フィールドをセットする
+            switch ($fieldMappings[$name]['type']) {
+                case 'datetime':
+                case 'datetimetz':
+                    $Property->setValue($destEntity, new \Datetime($srcProperties[$name]));
+                    break;
+                default:
+                    $Property->setValue($destEntity, $srcProperties[$name]);
+            }
+
+        }
+    }
 }

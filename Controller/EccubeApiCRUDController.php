@@ -62,9 +62,9 @@ class EccubeApiCRUDController extends AbstractApiController
             throw new NotFoundHttpException();
         }
         $className = $metadata->getName();
-
         $Entity = new $className;
-        $Entity->setPropertiesFromArray($request->request->all()); // TODO not null な外部リレーションの対応
+        EntityUtil::copyRelatePropertiesFromArray($app, $Entity, $request->request->all());
+
         try {
             $app['orm.em']->persist($Entity);
             $app['orm.em']->flush($Entity);
