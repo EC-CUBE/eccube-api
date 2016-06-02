@@ -22,6 +22,9 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 class EccubeApiCRUDController extends AbstractApiController
 {
 
+    /**
+     * すべてデータを返す.
+     */
     public function findAll(Application $app, Request $request, $table = null)
     {
         $metadata = EntityUtil::findMetadata($app, $table);
@@ -40,6 +43,9 @@ class EccubeApiCRUDController extends AbstractApiController
         return $this->getWrapperedResponseBy($app, array($table => $Results));
     }
 
+    /**
+     * IDを指定してエンティティを検索する
+     */
     public function find(Application $app, Request $request, $table = null, $id = 0)
     {
         $metadata = EntityUtil::findMetadata($app, $table);
@@ -54,6 +60,9 @@ class EccubeApiCRUDController extends AbstractApiController
         return $this->getWrapperedResponseBy($app, array($table => EntityUtil::entityToArray($app, $Results)));
     }
 
+    /**
+     * エンティティを生成する.
+     */
     public function create(Application $app, Request $request, $table = null)
     {
         $this->verifyRequest($app);
@@ -82,6 +91,9 @@ class EccubeApiCRUDController extends AbstractApiController
         }
     }
 
+    /**
+     * エンティティを更新する.
+     */
     public function update(Application $app, Request $request, $table = null, $id = 0)
     {
         $metadata = EntityUtil::findMetadata($app, $table);
@@ -90,13 +102,13 @@ class EccubeApiCRUDController extends AbstractApiController
         }
         $className = $metadata->getName();
 
-        $Entity = $Repository->find($id);
-        $Entity->setPropertiesFromArray($request->request->all(), array('id')); // TODO not null な外部リレーションの対応
+        $Entity = $app['orm.em']->getRepository($className)->find($id);
+        EntityUtil::copyRelatePropertiesFromArray($app, $Entity, $request->request->all());
         try {
-            $app['orm.em']->persist($Entity);
             $app['orm.em']->flush($Entity);
-            return $this->getWrapperedResponseBy($app, array($table => $Entity->toArray()), 200);
+            return $this->getWrapperedResponseBy($app, null, 204);
         } catch (\Exception $e) {
+            $this->addErrors($app, 400, $e->getMessage());
             return $this->getWrapperedResponseBy($app, $this->getErrors(), 400);
         }
     }
