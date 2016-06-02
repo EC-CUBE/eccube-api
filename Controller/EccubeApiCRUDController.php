@@ -113,19 +113,25 @@ class EccubeApiCRUDController extends AbstractApiController
         }
     }
 
+    /**
+     * エンティティを削除する.
+     */
     public function delete(Application $app, Request $request, $table = null, $id = 0)
     {
         $metadata = EntityUtil::findMetadata($app, $table);
         if (!is_object($metadata)) {
             throw new NotFoundHttpException();
         }
+        if (!array_key_exists('del_flg', $metadata->fieldMappings)) {
+            // TODO エラーメッセージ
+            return $this->getWrapperedResponseBy($app, $this->getErrors(), 405);
+        }
         $className = $metadata->getName();
 
         $Repository = $app['orm.em']->getRepository($className);
         $Results = $Repository->find($id);
         try {
-            // TODO 削除可能かどうかのチェック
-            $Results->setDelFlg(1);
+            $Results->setDelFlg(Constant::ENABLED);
         } catch (\Exception $e) {
             return $this->getWrapperedResponseBy($app, $this->getErrors(), 400);
         }

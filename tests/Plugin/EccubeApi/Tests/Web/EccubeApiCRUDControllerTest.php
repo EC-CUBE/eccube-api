@@ -289,6 +289,71 @@ class EccubeApiCRUDControllerTest extends AbstractWebTestCase
         }
     }
 
+    public function testDelete()
+    {
+        $faker = $this->getFaker();
+        $client = $this->client;
+        $metadatas = $this->app['orm.em']->getMetadataFactory()->getAllMetadata();
+        foreach ($metadatas as $metadata) {
+            $className = $metadata->getName();
+            if (strpos($metadata->table['name'], 'dtb_') === false
+                && strpos($metadata->table['name'], 'mtb_') === false) {
+                // dtb_ or mtb_ 以外のテーブルは除外
+                continue;
+            }
+
+            $table_name = EntityUtil::shortTableName($metadata->table['name']);
+            // XXX 複合キーのテーブルは除外
+            switch ($table_name) {
+                case 'block_position':
+                case 'payment_option':
+                case 'product_category':
+                case 'category_total_count':
+                case 'category_count':
+                    continue 2;
+                default:
+            }
+
+            // FIXME https://github.com/EC-CUBE/ec-cube/pull/1576
+            switch ($table_name) {
+                case 'plugin':
+                case 'plugin_event_handler':
+                    continue 2;
+                default:
+            }
+
+            $Entity = $this->app['orm.em']->getRepository($className)->findOneBy(array());
+
+            // XXX 複合キーの対応
+            $url = $this->app->url('api_operation_delete', array('table' => $table_name, 'id' => $Entity->getId()));
+            $crawler = $this->client->request(
+                'DELETE',
+                $url,
+                array(),
+                array(),
+                array(
+                    'CONTENT_TYPE' => 'application/json',
+                )
+            );
+
+            if (!array_key_exists('del_flg', $metadata->fieldMappings)) {
+                $this->expected = 405;
+                $this->actual = $this->client->getResponse()->getStatusCode();
+                $this->verify('DELETE method not allowed');
+            } else {
+                $this->expected = 204;
+                $this->actual = $this->client->getResponse()->getStatusCode();
+                $this->verify($this->client->getResponse()->getContent());
+                $this->assertTrue($this->client->getResponse()->isSuccessful());
+
+                $Entity2 = $this->app['orm.em']->getRepository($className)->find($Entity->getId());
+                $this->expected = 1;
+                $this->actual = $Entity2->getDelFlg();
+                $this->verify();
+            }
+        }
+    }
+
     protected function verifyFind($callback)
     {
         $client = $this->client;
