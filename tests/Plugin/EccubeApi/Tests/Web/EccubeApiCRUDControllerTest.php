@@ -3,6 +3,7 @@
 namespace Plugin\EccubeApi\Tests\Web;
 
 use Eccube\Common\Constant;
+use Eccube\Entity\AbstractEntity;
 use Eccube\Entity\MailHistory;
 use Eccube\Entity\MailTemplate;
 use Eccube\Entity\CustomerFavoriteProduct;
@@ -190,6 +191,8 @@ class EccubeApiCRUDControllerTest extends AbstractWebTestCase
 
                 default:
             }
+            $properties = $this->createProperties($metadata);
+            $Entity->setPropertiesFromArray($properties);
 
             $arrayEntity = EntityUtil::entityToArray($this->app, $Entity);
             if (array_key_exists('id', $arrayEntity)) {
@@ -217,9 +220,13 @@ class EccubeApiCRUDControllerTest extends AbstractWebTestCase
             $this->verify($this->client->getResponse()->getContent());
             $this->assertTrue($this->client->getResponse()->isSuccessful());
 
-            $this->assertRegExp('/'.preg_quote($url, '/').'\/[0-9]+/',
-                                $client->getResponse()->headers->get('Location'),
-            'Location ヘッダが一致するか？');
+            $this->assertTrue(preg_match('/'.preg_quote($url, '/').'\/([0-9]+)/',
+                                         $client->getResponse()->headers->get('Location'), $matched) > 0,
+                              'Location ヘッダが一致するか？');
+
+            $this->app['orm.em']->detach($Entity); // キャッシュを取得しないように detach する
+            $Created = $this->app['orm.em']->getRepository($className)->find($matched[1]);
+            $this->verifyProperties($properties, $Created);
         }
     }
 
@@ -256,12 +263,10 @@ class EccubeApiCRUDControllerTest extends AbstractWebTestCase
                 default:
             }
 
+            $properties = $this->createProperties($metadata);
             $Entity = $this->app['orm.em']->getRepository($className)->findOneBy(array());
-
-            if ($table_name == 'product') {
-                // TODO 他のテーブルもフィールドごとにチェックする
-                $Entity->setDescriptionDetail('説明変更');
-            }
+            $Entity->setPropertiesFromArray($properties);
+            $id = $Entity->getId();
 
             $arrayEntity = EntityUtil::entityToArray($this->app, $Entity);
             // XXX 複合キーの対応
@@ -282,10 +287,9 @@ class EccubeApiCRUDControllerTest extends AbstractWebTestCase
             $this->verify($this->client->getResponse()->getContent());
             $this->assertTrue($this->client->getResponse()->isSuccessful());
 
-            if ($table_name == 'product') {
-                $Entity2 = $this->app['orm.em']->getRepository($className)->find($Entity->getId());
-                $this->assertEquals('説明変更', $Entity2->getDescriptionDetail());
-            }
+            $this->app['orm.em']->detach($Entity); // キャッシュを取得しないように detach する
+            $Updated = $this->app['orm.em']->getRepository($className)->find($id);
+            $this->verifyProperties($properties, $Updated);
         }
     }
 
@@ -437,6 +441,71 @@ class EccubeApiCRUDControllerTest extends AbstractWebTestCase
                     }
                 }
             }
+        }
+    }
+
+    protected function createProperties($metadata)
+    {
+        $faker = $this->getFaker();
+        $properties = array();
+        foreach ($metadata->fieldMappings as $field => $mapping) {
+            // id 列は除外
+            if (array_key_exists('id', $mapping) === true
+                && $mapping['id'] === true) {
+                continue;
+            }
+            // 更新不可なフィールドは除外
+            switch ($mapping['fieldName']) {
+                case 'create_date':
+                case 'update_date':
+                case 'del_flg':
+                    continue 2;
+                default:
+            }
+            switch ($mapping['type']) {
+                case 'text':
+                case 'string':
+                    $properties[$mapping['fieldName']] = $faker->word;
+                    break;
+                case 'integer':
+                    $properties[$mapping['fieldName']] = $faker->numberBetween(1000, 9000);
+                    break;
+                case 'decimal':
+                    if (array_key_exists('scale', $mapping) && $mapping['scale'] === 0) {
+                        $properties[$mapping['fieldName']] = $faker->numberBetween(1000, 9000);
+                    } else {
+                        $properties[$mapping['fieldName']] = $faker->randomFloat(2, 1, 100);
+                    }
+                    break;
+                case 'smallint':
+                    $properties[$mapping['fieldName']] = 0;
+                    break;
+                case 'datetime':
+                case 'datetimetz':
+                    $properties[$mapping['fieldName']] = $faker->dateTimeThisYear();
+                    break;
+                default:
+            }
+        }
+
+        return $properties;
+    }
+
+    protected function verifyProperties(array $expectedProperties, AbstractEntity $actualEntity)
+    {
+        $Reflect = new \ReflectionClass($actualEntity);
+        if ($actualEntity instanceof \Doctrine\ORM\Proxy\Proxy) {
+            // Proxy の場合は親クラスを取得
+            $Reflect = $Reflect->getParentClass();
+        }
+        foreach ($expectedProperties as $field => $value) {
+            $Property = $Reflect->getProperty($field);
+            $Property->setAccessible(true);
+
+            $this->expected = $value;
+            $this->actual = $Property->getValue($actualEntity);
+            // $this->app->log(($Reflect->getName().'::'.$field.' = '.print_r($value, true).' = '.print_r($this->actual, true)));
+            $this->verify($Reflect->getName().'::'.$field);
         }
     }
 }
