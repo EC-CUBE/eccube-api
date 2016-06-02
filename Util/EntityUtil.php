@@ -49,8 +49,18 @@ class EntityUtil extends BaseEntityUtil
     }
 
     /**
-     * JSON Respoinse 用の配列を返します.
+     * JSON Respoinse 用の連想配列を返します.
      *
+     * このメソッドは、エンティティのフィールドをキーとした連想配列を返します.
+     * フィールドのデータ型に応じて以下のような型変換をします.
+     * - Datetime ::  W3C datetime 形式の文字列
+     * - AbstractEntity :: [id => value] の連想配列
+     * - PersistentCollection :: [[id => value], [id => value], ...] の配列
+     *
+     * @param Application $app
+     * @param AbstractEntity $Entity 対象のエンティティ
+     * @param array $excludeAttribute 除外するフィールド
+     * @return array JSON Respoinse 用の連想配列を返します.
      * @see AbstractEntity::toArray()
      */
     public static function entityToArray(Application $app, AbstractEntity $Entity, array $excludeAttribute = array('__initializer__', '__cloner__', '__isInitialized__'))
@@ -88,6 +98,12 @@ class EntityUtil extends BaseEntityUtil
 
     /**
      * Entity のID情報を配列で返します.
+     *
+     * Entity の内容を ['id' => id_value] 形式の連想配列に変換して返します.
+     *
+     * @param Application $app
+     * @param AbstractEntity $Entity エンティティ
+     * @return array ['id' => id_value] 形式の連想配列
      */
     public static function getEntityIdentifierAsArray(Application $app, AbstractEntity $Entity)
     {
@@ -113,6 +129,16 @@ class EntityUtil extends BaseEntityUtil
 
     /**
      * srcProperties のフィールドを destEntity にコピーします.
+     *
+     * このメソッドは Doctrine の metadata を参照し, destEntity のフィールドに一致した型変換をします.
+     * フィールドが外部キーのオブジェクトの場合は, 該当のエンティティを Repository から取得します.
+     * datetime または datetimetz 形式の場合は Datetime 型に変換します.
+     *
+     * @param Application $app
+     * @param AbstractEntity $destEntity コピー先のエンティティ
+     * @param array $srcProperties プロパティをキーにした配列
+     * @param array $excludeAttribute 除外するフィールド
+     * @return void
      */
     public static function copyRelatePropertiesFromArray(Application $app, AbstractEntity $destEntity, array $srcProperties, array $excludeAttribute = array('__initializer__', '__cloner__', '__isInitialized__'))
     {
@@ -143,7 +169,8 @@ class EntityUtil extends BaseEntityUtil
                     continue;
                 }
 
-                if (array_values($srcProperties[$name]) === $srcProperties[$name]) { // 配列 or 連想配列のチェック
+                // 配列 or 連想配列のチェック see http://qiita.com/Hiraku/items/721cc3a385cb2d7daebd
+                if (array_values($srcProperties[$name]) === $srcProperties[$name]) {
                     // 配列の場合は Collection
                     $Collections = array();
                     foreach ($srcProperties[$name] as $manyProperty) {
