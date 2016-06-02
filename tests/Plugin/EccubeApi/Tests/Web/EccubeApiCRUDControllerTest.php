@@ -112,14 +112,17 @@ class EccubeApiCRUDControllerTest extends AbstractWebTestCase
         $client = $this->client;
         $app = $this->app;
         $this->verifyFind(function ($table_name, $Entity) use ($app, $client) {
+
             // XXX 複合キーのテーブルは除外
-            if ($table_name == 'block_position'
-                || $table_name == 'payment_option'
-                || $table_name == 'product_category'
-                || $table_name == 'category_total_count'
-                || $table_name == 'category_count'
-            ) {
-                return array($table_name => array());
+            switch ($table_name) {
+                case 'block_position':
+                case 'payment_option':
+                case 'product_category':
+                case 'category_total_count':
+                case 'category_count':
+                    return array($table_name => array());
+                    break;
+                default:
             }
 
             $crawler = $client->request(
@@ -147,16 +150,33 @@ class EccubeApiCRUDControllerTest extends AbstractWebTestCase
 
             $table_name = EntityUtil::shortTableName($metadata->table['name']);
             // XXX 複合キーのテーブルは除外
-            if ($table_name == 'block_position'
-                || $table_name == 'payment_option'
-                || $table_name == 'product_category'
-                || $table_name == 'category_total_count'
-                || $table_name == 'category_count'
-            ) {
-                continue;
+            switch ($table_name) {
+                case 'block_position':
+                case 'payment_option':
+                case 'product_category':
+                case 'category_total_count':
+                case 'category_count':
+                    continue 2;
+                default:
+            }
+
+            // FIXME https://github.com/EC-CUBE/ec-cube/pull/1576
+            switch ($table_name) {
+                case 'plugin':
+                case 'plugin_event_handler':
+                    continue 2;
+                default:
+            }
+
+            // FIXME https://github.com/EC-CUBE/ec-cube/issues/1580
+            switch ($table_name) {
+                case 'help':
+                    continue 2;
+                default:
             }
 
             $Entity = $this->app['orm.em']->getRepository($className)->findOneBy(array());
+            // 各テーブル特有の処理
             switch ($table_name) {
                 case 'customer':
                     $Entity->setSecretKey($this->app['eccube.repository.customer']->getUniqueSecretKey($this->app));
