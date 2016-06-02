@@ -19,6 +19,11 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
+/**
+ * エンティティの CRUD API.
+ *
+ * @author Kentaro Ohkouchi
+ */
 class EccubeApiCRUDController extends AbstractApiController
 {
 
@@ -129,9 +134,10 @@ class EccubeApiCRUDController extends AbstractApiController
         $className = $metadata->getName();
 
         $Repository = $app['orm.em']->getRepository($className);
-        $Results = $Repository->find($id);
+        $Entity = $Repository->find($id);
         try {
-            $Results->setDelFlg(Constant::ENABLED);
+            $Entity->setDelFlg(Constant::ENABLED);
+            $app['orm.em']->flush($Entity);
         } catch (\Exception $e) {
             return $this->getWrapperedResponseBy($app, $this->getErrors(), 400);
         }
