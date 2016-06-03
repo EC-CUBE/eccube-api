@@ -34,8 +34,24 @@ class EccubeApiCRUDController extends AbstractApiController
     {
         // TODO 暫定
         $scope_reuqired = 'read';
-        if (!$this->verifyRequest($app, $scope_reuqired)) {
-            return $app['oauth2.server.resource']->getResponse();
+        $is_authorized = $this->verifyRequest($app, $scope_reuqired);
+        $AccessToken = $app['oauth2.server.resource']->getAccessTokenData(
+            \OAuth2\Request::createFromGlobals(),
+            $app['oauth2.server.resource']->getResponse()
+        );
+        if (preg_match('/Bearer (\w+)/', $request->headers->get('authorization'))) {
+            // Bearer トークンが存在する場合は認証チェック
+            if (!$is_authorized) {
+                return $app['oauth2.server.resource']->getResponse();
+            }
+
+            // Member で認証済みかどうか
+            if (!$AccessToken['client']->hasMember()) {
+                if ($table == 'order') { // TODO 暫定
+                    $this->addErrors($app, 403, 'Access Forbidden');
+                    return $this->getWrapperedResponseBy($app, $this->getErrors(), 403);
+                }
+            }
         }
 
         $metadata = EntityUtil::findMetadata($app, $table);
