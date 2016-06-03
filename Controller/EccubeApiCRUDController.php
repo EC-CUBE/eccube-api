@@ -32,6 +32,12 @@ class EccubeApiCRUDController extends AbstractApiController
      */
     public function findAll(Application $app, Request $request, $table = null)
     {
+        // TODO 暫定
+        $scope_reuqired = 'read';
+        if (!$this->verifyRequest($app, $scope_reuqired)) {
+            return $app['oauth2.server.resource']->getResponse();
+        }
+
         $metadata = EntityUtil::findMetadata($app, $table);
         if (!is_object($metadata)) {
             throw new NotFoundHttpException();
@@ -53,6 +59,12 @@ class EccubeApiCRUDController extends AbstractApiController
      */
     public function find(Application $app, Request $request, $table = null, $id = 0)
     {
+        // TODO 暫定
+        $scope_reuqired = 'read';
+        if (!$this->verifyRequest($app, $scope_reuqired)) {
+            return $app['oauth2.server.resource']->getResponse();
+        }
+
         $metadata = EntityUtil::findMetadata($app, $table);
         if (!is_object($metadata)) {
             throw new NotFoundHttpException();
@@ -70,6 +82,12 @@ class EccubeApiCRUDController extends AbstractApiController
      */
     public function create(Application $app, Request $request, $table = null)
     {
+        // TODO 暫定
+        $scope_reuqired = 'write';
+        if (!$this->verifyRequest($app, $scope_reuqired)) {
+            return $app['oauth2.server.resource']->getResponse();
+        }
+
         $this->verifyRequest($app);
         $metadata = EntityUtil::findMetadata($app, $table);
         if (!is_object($metadata)) {
@@ -101,6 +119,12 @@ class EccubeApiCRUDController extends AbstractApiController
      */
     public function update(Application $app, Request $request, $table = null, $id = 0)
     {
+        // TODO 暫定
+        $scope_reuqired = 'write';
+        if (!$this->verifyRequest($app, $scope_reuqired)) {
+            return $app['oauth2.server.resource']->getResponse();
+        }
+
         $metadata = EntityUtil::findMetadata($app, $table);
         if (!is_object($metadata)) {
             throw new NotFoundHttpException();
@@ -123,6 +147,12 @@ class EccubeApiCRUDController extends AbstractApiController
      */
     public function delete(Application $app, Request $request, $table = null, $id = 0)
     {
+        // TODO 暫定
+        $scope_reuqired = 'write';
+        if (!$this->verifyRequest($app, $scope_reuqired)) {
+            return $app['oauth2.server.resource']->getResponse();
+        }
+
         $metadata = EntityUtil::findMetadata($app, $table);
         if (!is_object($metadata)) {
             throw new NotFoundHttpException();

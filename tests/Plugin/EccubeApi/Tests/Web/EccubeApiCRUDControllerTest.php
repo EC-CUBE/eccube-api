@@ -9,10 +9,9 @@ use Eccube\Entity\MailTemplate;
 use Eccube\Entity\CustomerFavoriteProduct;
 use Eccube\Entity\ProductTag;
 use Eccube\Entity\AuthorityRole;
-use Eccube\Tests\Web\AbstractWebTestCase;
 use Plugin\EccubeApi\Util\EntityUtil;
 
-class EccubeApiCRUDControllerTest extends AbstractWebTestCase
+class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
 {
 
     protected $Customer;
@@ -24,6 +23,7 @@ class EccubeApiCRUDControllerTest extends AbstractWebTestCase
     protected $ProductTag;
     protected $AuthorityRole;
     protected $tables;
+    protected $AccessToken;
 
     public function setUp()
     {
@@ -94,16 +94,31 @@ class EccubeApiCRUDControllerTest extends AbstractWebTestCase
         $this->AuthorityRole->setAuthority($Authority);
         $this->app['orm.em']->persist($this->AuthorityRole);
         $this->app['orm.em']->flush();
+
+        // ログイン処理
+        $client = $this->loginTo($this->Member);
+        $this->AccessToken = $this->doAuthorized($this->Member);
+        // $_SERVER に入れておかないと認証されない
+        $_SERVER['HTTP_AUTHORIZATION'] = 'Bearer '.$this->AccessToken['token'];
     }
 
     public function testFindAll()
     {
         $client = $this->client;
+        $AccessToken = $this->AccessToken;
         $app = $this->app;
-        $this->verifyFind(function ($table_name, $Entity) use ($app, $client) {
+        $this->verifyFind(function ($table_name, $Entity) use ($app, $client, $AccessToken) {
             $crawler = $client->request(
                 'GET',
-                $app->path('api_operation_findall', array('table' => $table_name)));
+                $app->path('api_operation_findall', array('table' => $table_name)),
+                array(),
+                array(),
+                array(
+                    'HTTP_AUTHORIZATION' => 'Bearer '.$AccessToken['token'],
+                    'CONTENT_TYPE' => 'application/json',
+                )
+            );
+
             return json_decode($client->getResponse()->getContent(), true);
         });
     }
@@ -111,8 +126,9 @@ class EccubeApiCRUDControllerTest extends AbstractWebTestCase
     public function testFindOnce()
     {
         $client = $this->client;
+        $AccessToken = $this->AccessToken;
         $app = $this->app;
-        $this->verifyFind(function ($table_name, $Entity) use ($app, $client) {
+        $this->verifyFind(function ($table_name, $Entity) use ($app, $client, $AccessToken) {
 
             // XXX 複合キーのテーブルは除外
             switch ($table_name) {
@@ -128,7 +144,15 @@ class EccubeApiCRUDControllerTest extends AbstractWebTestCase
 
             $crawler = $client->request(
                 'GET',
-                $app->path('api_operation_find', array('table' => $table_name, 'id' => $Entity->getId())));
+                $app->path('api_operation_find', array('table' => $table_name, 'id' => $Entity->getId())),
+                array(),
+                array(),
+                array(
+                    'HTTP_AUTHORIZATION' => 'Bearer '.$AccessToken['token'],
+                    'CONTENT_TYPE' => 'application/json',
+                )
+
+            );
             $content = json_decode($client->getResponse()->getContent(), true);
             $Result = array($table_name => array($content[$table_name]));
 
@@ -210,6 +234,7 @@ class EccubeApiCRUDControllerTest extends AbstractWebTestCase
                 array(),
                 array(),
                 array(
+                    'HTTP_AUTHORIZATION' => 'Bearer '.$this->AccessToken['token'],
                     'CONTENT_TYPE' => 'application/json',
                 ),
                 json_encode($arrayEntity)
@@ -277,6 +302,7 @@ class EccubeApiCRUDControllerTest extends AbstractWebTestCase
                 array(),
                 array(),
                 array(
+                    'HTTP_AUTHORIZATION' => 'Bearer '.$this->AccessToken['token'],
                     'CONTENT_TYPE' => 'application/json',
                 ),
                 json_encode($arrayEntity)
@@ -336,6 +362,7 @@ class EccubeApiCRUDControllerTest extends AbstractWebTestCase
                 array(),
                 array(),
                 array(
+                    'HTTP_AUTHORIZATION' => 'Bearer '.$this->AccessToken['token'],
                     'CONTENT_TYPE' => 'application/json',
                 )
             );
@@ -381,6 +408,10 @@ class EccubeApiCRUDControllerTest extends AbstractWebTestCase
             // Entity のデータチェックのため、1件だけ取得する
             $Entity = $this->app['orm.em']->getRepository($className)->findOneBy(array());
             $ApiResult = call_user_func($callback, $table_name, $Entity);
+
+            $this->expected = 200;
+            $this->actual = $client->getResponse()->getStatusCode();
+            $this->verify($client->getResponse()->getContent());
 
             $Lists = $ApiResult[$table_name];
             $this->assertTrue(is_array($Lists));
