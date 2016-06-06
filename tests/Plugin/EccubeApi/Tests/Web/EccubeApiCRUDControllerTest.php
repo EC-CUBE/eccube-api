@@ -28,74 +28,10 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
     public function setUp()
     {
         parent::setUp();
-        $this->Customer = $this->createCustomer();
-        $this->Product = $this->createProduct();
-        $this->Order = $this->createOrder($this->Customer);
-        $this->Member = $this->app['eccube.repository.member']->find(2);
-        $faker = $this->getFaker();
 
-        $this->MailHistories = array();
-        $this->MailTemplate = new MailTemplate();
-        $this->MailTemplate
-            ->setName($faker->word)
-            ->setHeader($faker->word)
-            ->setFooter($faker->word)
-            ->setSubject($faker->word)
-            ->setCreator($this->Member)
-            ->setDelFlg(Constant::DISABLED);
-        $this->app['orm.em']->persist($this->MailTemplate);
-        $this->app['orm.em']->flush();
-        for ($i = 0; $i < 3; $i++) {
-            $this->MailHistories[$i] = new MailHistory();
-            $this->MailHistories[$i]
-                ->setMailTemplate($this->MailTemplate)
-                ->setOrder($this->Order)
-                ->setSendDate(new \DateTime())
-                ->setMailBody($faker->realText())
-                ->setCreator($this->Member)
-                ->setSubject('subject-'.$i);
+        $this->createEntities();
 
-            $this->app['orm.em']->persist($this->MailHistories[$i]);
-            $this->app['orm.em']->flush();
-        }
-
-        $this->CustomerFavoriteProduct = new CustomerFavoriteProduct();
-        $this->CustomerFavoriteProduct->setCustomer($this->Customer);
-        $this->CustomerFavoriteProduct->setProduct($this->Product);
-        $this->CustomerFavoriteProduct->setDelFlg(0);
-        $this->app['orm.em']->persist($this->CustomerFavoriteProduct);
-        $this->app['orm.em']->flush();
-
-        $Tag = $this->app['eccube.repository.master.tag']->find(1);
-        $this->ProductTag = new ProductTag();
-        $this->ProductTag->setProduct($this->Product);
-        $this->ProductTag->setCreator($this->Member);
-        $this->ProductTag->setTag($Tag);
-        $this->ProductTag->setCreateDate(new \Datetime());
-        $this->app['orm.em']->persist($this->ProductTag);
-        $this->app['orm.em']->flush();
-
-        // XXX 未使用
-        $this->Zip = new \Eccube\Entity\Master\Zip();
-        $this->Zip->setId(1);
-        $this->Zip->setZipcode($faker->postCode);
-        $this->Zip->setState($faker->prefecture);
-        $this->Zip->setCity($faker->city);
-        $this->Zip->setTown($faker->streetAddress);
-        $this->app['orm.em']->persist($this->Zip);
-        $this->app['orm.em']->flush();
-
-        $Authority = $this->app['eccube.repository.master.authority']->find(1);
-        $this->AuthorityRole = new AuthorityRole();
-        $this->AuthorityRole->setDenyUrl($faker->url);
-        $this->AuthorityRole->setCreateDate(new \Datetime());
-        $this->AuthorityRole->setUpdateDate(new \Datetime());
-        $this->AuthorityRole->setCreator($this->Member);
-        $this->AuthorityRole->setAuthority($Authority);
-        $this->app['orm.em']->persist($this->AuthorityRole);
-        $this->app['orm.em']->flush();
-
-        // ログイン処理
+        // OAuth2.0 認証処理
         $client = $this->loginTo($this->Member);
         $this->AccessToken = $this->doAuthorized($this->Member);
         // $_SERVER に入れておかないと認証されない
@@ -158,6 +94,35 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
 
             return $Result;
         });
+    }
+
+    public function testFindProductCategory()
+    {
+        $client = $this->client;
+        $AccessToken = $this->AccessToken;
+        $app = $this->app;
+
+        $this->verifyFind(function ($table_name, $Entity) use ($app, $client, $AccessToken) {
+
+            $crawler = $client->request(
+                'GET',
+                $app->path('api_operation_find_product_category',
+                           array(
+                               'product_id' => $Entity->getProductId(),
+                               'category_id' => $Entity->getCategoryId()
+                           )),
+                array(),
+                array(),
+                array(
+                    'HTTP_AUTHORIZATION' => 'Bearer '.$AccessToken['token'],
+                    'CONTENT_TYPE' => 'application/json',
+                )
+
+            );
+            $content = json_decode($client->getResponse()->getContent(), true);
+            $Result = array($table_name => array($content[$table_name]));
+            return $Result;
+        }, 'product_category');
     }
 
     public function testCreate()
@@ -253,6 +218,135 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
             $Created = $this->app['orm.em']->getRepository($className)->find($matched[1]);
             $this->verifyProperties($properties, $Created);
         }
+    }
+
+    public function testCreateProductCategory()
+    {
+        $faker = $this->getFaker();
+        $client = $this->client;
+        $metadata = EntityUtil::findMetadata($this->app, 'product_category');
+        $className = $metadata->getName();
+
+        $Product = $this->createProduct();
+        $Category = new \Eccube\Entity\Category();
+        $Category->setName($faker->word);
+        $Category->setRank(999);
+        $Category->setLevel(1);
+        $Category->setCreator($this->Member);
+        $Category->setDelFlg(0);
+        $Category->setCreateDate(new \DateTime());
+        $Category->setUpdateDate(new \DateTime());
+        $this->app['orm.em']->persist($Category);
+        $this->app['orm.em']->flush($Category);
+
+        $Entity = new \Eccube\Entity\ProductCategory();
+        $Entity->setProduct($Product);
+        $Entity->setProductId($Product->getId());
+        $Entity->setCategory($Category);
+        $Entity->setCategoryId($Category->getId());
+        $Entity->setRank(999);
+
+        $arrayEntity = EntityUtil::entityToArray($this->app, $Entity);
+
+        $url = $this->app->url('api_operation_create_product_category');
+        $crawler = $this->client->request(
+            'POST',
+            $url,
+            array(),
+            array(),
+            array(
+                'HTTP_AUTHORIZATION' => 'Bearer '.$this->AccessToken['token'],
+                'CONTENT_TYPE' => 'application/json',
+            ),
+            json_encode($arrayEntity)
+        );
+
+        $this->expected = 201;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify($this->client->getResponse()->getContent());
+        $this->assertTrue($this->client->getResponse()->isSuccessful());
+
+        $this->expected = $url.'/product_id/'.$Product->getId().'/category_id/'.$Category->getId();
+        $this->actual = $client->getResponse()->headers->get('Location');
+        $this->verify('Location ヘッダが一致するか？');
+
+        $this->app['orm.em']->detach($Entity); // キャッシュを取得しないように detach する
+        $Created = $this->app['orm.em']->getRepository($className)->findOneBy(
+            array(
+                'product_id' => $Product->getId(),
+                'category_id' => $Category->getId()
+            )
+        );
+        $this->expected = 999;
+        $this->actual = $Created->getRank();
+        $this->verify();
+    }
+
+    public function testUpdateProductCategory()
+    {
+        $faker = $this->getFaker();
+        $client = $this->client;
+        $metadata = EntityUtil::findMetadata($this->app, 'product_category');
+        $className = $metadata->getName();
+
+        $Product = $this->createProduct();
+        $Category = new \Eccube\Entity\Category();
+        $Category->setName($faker->word);
+        $Category->setRank(999);
+        $Category->setLevel(1);
+        $Category->setCreator($this->Member);
+        $Category->setDelFlg(0);
+        $Category->setCreateDate(new \DateTime());
+        $Category->setUpdateDate(new \DateTime());
+        $this->app['orm.em']->persist($Category);
+        $this->app['orm.em']->flush($Category);
+
+        $Entity = new \Eccube\Entity\ProductCategory();
+        $Entity->setProduct($Product);
+        $Entity->setProductId($Product->getId());
+        $Entity->setCategory($Category);
+        $Entity->setCategoryId($Category->getId());
+        $Entity->setRank(999);
+        $this->app['orm.em']->persist($Entity);
+        $this->app['orm.em']->flush($Entity);
+
+
+        $arrayEntity = EntityUtil::entityToArray($this->app, $Entity);
+        $arrayEntity['rank'] = 888;
+
+        $url = $this->app->url('api_operation_update_product_category',
+                               array(
+                                   'product_id' => $Product->getId(),
+                                   'category_id' => $Category->getId()
+                               )
+        );
+        $crawler = $this->client->request(
+            'PUT',
+            $url,
+            array(),
+            array(),
+            array(
+                'HTTP_AUTHORIZATION' => 'Bearer '.$this->AccessToken['token'],
+                'CONTENT_TYPE' => 'application/json',
+            ),
+            json_encode($arrayEntity)
+        );
+
+        $this->expected = 204;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify($this->client->getResponse()->getContent());
+        $this->assertTrue($this->client->getResponse()->isSuccessful());
+
+        $this->app['orm.em']->detach($Entity); // キャッシュを取得しないように detach する
+        $Created = $this->app['orm.em']->getRepository($className)->findOneBy(
+            array(
+                'product_id' => $Product->getId(),
+                'category_id' => $Category->getId()
+            )
+        );
+        $this->expected = 888;
+        $this->actual = $Created->getRank();
+        $this->verify();
     }
 
     public function testUpdate()
@@ -385,7 +479,7 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
         }
     }
 
-    protected function verifyFind($callback)
+    protected function verifyFind($callback, $target_table_name = null)
     {
         $client = $this->client;
         $metadatas = $this->app['orm.em']->getMetadataFactory()->getAllMetadata();
@@ -404,6 +498,10 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
                 continue;
             }
             $table_name = str_replace(array('dtb_', 'mtb_'), '', $metadata->table['name']);
+            if (!is_null($target_table_name) && $target_table_name != $table_name) {
+                // $target_table_name が指定されていたら, それ以外は除外
+                continue;
+            }
 
             // Entity のデータチェックのため、1件だけ取得する
             $Entity = $this->app['orm.em']->getRepository($className)->findOneBy(array());
@@ -429,7 +527,19 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
                     $this->assertNotNull($Entity);
                 } else {
                     // ここは複合キーの結果が入ってくる
-                    continue;
+                    switch ($table_name) {
+                        case 'product_category':
+                            $Entity = $this->app['orm.em']->getRepository($className)->findOneBy(
+                                array(
+                                    'product_id' => $Result['product_id'],
+                                    'category_id' => $Result['category_id']
+                                )
+                            );
+                            break;
+                        default:
+                            continue 2;
+                    }
+                    $this->assertNotNull($Entity);
                     // TODO 複合キーの場合の対応
                     // $Entity = $this->app['orm.em']->getRepository($className)->find($Result['id']);
                     // $this->assertNotNull($Entity);
@@ -538,5 +648,75 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
             // $this->app->log(($Reflect->getName().'::'.$field.' = '.print_r($value, true).' = '.print_r($this->actual, true)));
             $this->verify($Reflect->getName().'::'.$field);
         }
+    }
+
+    protected function createEntities()
+    {
+        $this->Customer = $this->createCustomer();
+        $this->Product = $this->createProduct();
+        $this->Order = $this->createOrder($this->Customer);
+        $this->Member = $this->app['eccube.repository.member']->find(2);
+        $faker = $this->getFaker();
+
+        $this->MailHistories = array();
+        $this->MailTemplate = new MailTemplate();
+        $this->MailTemplate
+            ->setName($faker->word)
+            ->setHeader($faker->word)
+            ->setFooter($faker->word)
+            ->setSubject($faker->word)
+            ->setCreator($this->Member)
+            ->setDelFlg(Constant::DISABLED);
+        $this->app['orm.em']->persist($this->MailTemplate);
+        $this->app['orm.em']->flush($this->MailTemplate);
+        for ($i = 0; $i < 3; $i++) {
+            $this->MailHistories[$i] = new MailHistory();
+            $this->MailHistories[$i]
+                ->setMailTemplate($this->MailTemplate)
+                ->setOrder($this->Order)
+                ->setSendDate(new \DateTime())
+                ->setMailBody($faker->realText())
+                ->setCreator($this->Member)
+                ->setSubject('subject-'.$i);
+
+            $this->app['orm.em']->persist($this->MailHistories[$i]);
+            $this->app['orm.em']->flush($this->MailHistories[$i]);
+        }
+
+        $this->CustomerFavoriteProduct = new CustomerFavoriteProduct();
+        $this->CustomerFavoriteProduct->setCustomer($this->Customer);
+        $this->CustomerFavoriteProduct->setProduct($this->Product);
+        $this->CustomerFavoriteProduct->setDelFlg(0);
+        $this->app['orm.em']->persist($this->CustomerFavoriteProduct);
+        $this->app['orm.em']->flush($this->CustomerFavoriteProduct);
+
+        $Tag = $this->app['eccube.repository.master.tag']->find(1);
+        $this->ProductTag = new ProductTag();
+        $this->ProductTag->setProduct($this->Product);
+        $this->ProductTag->setCreator($this->Member);
+        $this->ProductTag->setTag($Tag);
+        $this->ProductTag->setCreateDate(new \Datetime());
+        $this->app['orm.em']->persist($this->ProductTag);
+        $this->app['orm.em']->flush($this->ProductTag);
+
+        $Authority = $this->app['eccube.repository.master.authority']->find(1);
+        $this->AuthorityRole = new AuthorityRole();
+        $this->AuthorityRole->setDenyUrl($faker->url);
+        $this->AuthorityRole->setCreateDate(new \Datetime());
+        $this->AuthorityRole->setUpdateDate(new \Datetime());
+        $this->AuthorityRole->setCreator($this->Member);
+        $this->AuthorityRole->setAuthority($Authority);
+        $this->app['orm.em']->persist($this->AuthorityRole);
+        $this->app['orm.em']->flush($this->AuthorityRole);
+
+        // XXX 未使用
+        $this->Zip = new \Eccube\Entity\Master\Zip();
+        $this->Zip->setId(1);
+        $this->Zip->setZipcode($faker->postCode);
+        $this->Zip->setState($faker->prefecture);
+        $this->Zip->setCity($faker->city);
+        $this->Zip->setTown($faker->streetAddress);
+        $this->app['orm.em']->persist($this->Zip);
+        $this->app['orm.em']->flush($this->Zip);
     }
 }

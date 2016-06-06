@@ -75,6 +75,42 @@ class EccubeApiCRUDController extends AbstractApiController
      */
     public function find(Application $app, Request $request, $table = null, $id = 0)
     {
+        return $this->findEntity($app, $request,
+                                 function ($id, $className) use ($app) {
+                                     return $app['orm.em']->getRepository($className)->find($id);
+                                 },
+                                 array($id), $table);
+    }
+
+    /**
+     * \Eccube\Entity\ProductCategory を検索する.
+     */
+    public function findProductCategory(Application $app, Request $request, $product_id = 0, $category_id = 0)
+    {
+        // TODO 検索結果が0件の場合は 404 を返す.
+        return $this->findEntity($app, $request,
+                                 function ($product_id, $category_id, $className) use ($app) {
+                                     return $app['orm.em']->getRepository($className)->findOneBy(
+                                         array(
+                                             'product_id' => $product_id,
+                                             'category_id' => $category_id
+                                     ));
+                                 },
+                                 array($product_id, $category_id), 'product_category');
+    }
+
+    /**
+     * コールバック関数を指定してエンティティを検索する.
+     *
+     * @param Application $app
+     * @param Request $request
+     * @param callable $callback コールバック関数
+     * @param array $params_arr コールバック関数の引数
+     * @param string $table 検索対象のテーブル名
+     * @return \Symfony\Component\HttpFoundation\JsonResponse|Response
+     */
+    protected function findEntity(Application $app, Request $request, callable $callback = null, array $params_arr = array(), $table = null)
+    {
         // TODO 暫定
         $scope_reuqired = 'read';
         if (!$this->verifyRequest($app, $scope_reuqired)) {
@@ -86,9 +122,9 @@ class EccubeApiCRUDController extends AbstractApiController
             throw new NotFoundHttpException();
         }
         $className = $metadata->getName();
+        $params_arr[] = $className;
 
-        $Repository = $app['orm.em']->getRepository($className);
-        $Results = $Repository->find($id);
+        $Results = call_user_func_array($callback, $params_arr);
 
         return $this->getWrapperedResponseBy($app, array($table => EntityUtil::entityToArray($app, $Results)));
     }
@@ -97,6 +133,38 @@ class EccubeApiCRUDController extends AbstractApiController
      * エンティティを生成する.
      */
     public function create(Application $app, Request $request, $table = null)
+    {
+        return $this->createEntity($app, $request, function ($Response, $table, $Entity) use ($app) {
+            $Response->headers->set("Location", $app->url('api_operation_find',
+                                                          array(
+                                                              'table' => $table,
+                                                              'id' => $Entity->getId()
+                                                          )));
+
+            return;
+        }, $table);
+    }
+
+    /**
+     * \Eccube\Entity\ProductCategory を生成する.
+     */
+    public function createProductCategory(Application $app, Request $request)
+    {
+        return $this->createEntity($app, $request, function ($Response, $table, $Entity) use ($app) {
+            $Response->headers->set("Location", $app->url('api_operation_find_product_category',
+                                                          array(
+                                                              'product_id' => $Entity->getProductId(),
+                                                              'category_id' => $Entity->getCategoryId()
+                                                          )));
+
+            return;
+        }, 'product_category');
+    }
+
+    /**
+     * コールバック関数を指定してエンティティを生成する.
+     */
+    protected function createEntity(Application $app, Request $request, callable $callback, $table = null)
     {
         // TODO 暫定
         $scope_reuqired = 'write';
@@ -117,12 +185,8 @@ class EccubeApiCRUDController extends AbstractApiController
             $app['orm.em']->persist($Entity);
             $app['orm.em']->flush($Entity);
             $Response = $app['oauth2.server.resource']->getResponse();
-            $Response->headers->set("Location", $app->url('api_operation_find',
-                                                          array(
-                                                              'table' => $table,
-                                                              'id' => $Entity->getId()
-                                                          )
-            ));
+            call_user_func($callback, $Response, $table, $Entity);
+
             return $this->getWrapperedResponseBy($app, array(), 201);
         } catch (\Exception $e) {
             $this->addErrors($app, 400, $e->getMessage());
@@ -130,10 +194,37 @@ class EccubeApiCRUDController extends AbstractApiController
         }
     }
 
-    /**
-     * エンティティを更新する.
-     */
     public function update(Application $app, Request $request, $table = null, $id = 0)
+    {
+        return $this->updateEntity($app, $request,
+                                 function ($id, $className) use ($app) {
+                                     return $app['orm.em']->getRepository($className)->find($id);
+                                 },
+                                 array($id), $table);
+
+    }
+
+    /**
+     * \Eccube\Entity\ProductCategory を更新する.
+     */
+    public function updateProductCategory(Application $app, Request $request, $product_id = 0, $category_id = 0)
+    {
+        // TODO エンティティが存在しない場合は 404 を返す.
+        return $this->updateEntity($app, $request,
+                                   function ($product_id, $category_id, $className) use ($app) {
+                                       return $app['orm.em']->getRepository($className)->findOneBy(
+                                           array(
+                                               'product_id' => $product_id,
+                                               'category_id' => $category_id
+                                           ));
+                                   },
+                                   array($product_id, $category_id), 'product_category');
+    }
+
+    /**
+     * コールバック関数を指定してエンティティを更新する.
+     */
+    public function updateEntity(Application $app, Request $request, callable $callback, array $params_arr = array(), $table = null)
     {
         // TODO 暫定
         $scope_reuqired = 'write';
@@ -146,8 +237,10 @@ class EccubeApiCRUDController extends AbstractApiController
             throw new NotFoundHttpException();
         }
         $className = $metadata->getName();
+        $params_arr[] = $className;
 
-        $Entity = $app['orm.em']->getRepository($className)->find($id);
+        $Entity = call_user_func_array($callback, $params_arr);
+        // $Entity = $app['orm.em']->getRepository($className)->find($id);
         EntityUtil::copyRelatePropertiesFromArray($app, $Entity, $request->request->all());
         try {
             $app['orm.em']->flush($Entity);

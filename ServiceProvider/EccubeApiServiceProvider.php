@@ -82,6 +82,20 @@ class EccubeApiServiceProvider implements ServiceProviderInterface
 
         // api
         $c = $app['controllers_factory'];
+
+        $c->get('/product_category/product_id/{product_id}/category_id/{category_id}',
+                'Plugin\EccubeApi\Controller\EccubeApiCRUDController::findProductCategory')
+            ->bind('api_operation_find_product_category')
+            ->assert('product_id', '\d+')
+            ->assert('category_id', '\d+');
+        $c->post('/product_category', 'Plugin\EccubeApi\Controller\EccubeApiCRUDController::createProductCategory')
+            ->bind('api_operation_create_product_category');
+        $c->put('/product_category/product_id/{product_id}/category_id/{category_id}',
+                'Plugin\EccubeApi\Controller\EccubeApiCRUDController::updateProductCategory')
+            ->bind('api_operation_update_product_category')
+            ->assert('product_id', '\d+')
+            ->assert('category_id', '\d+');
+
         $c->get('/{table}', 'Plugin\EccubeApi\Controller\EccubeApiCRUDController::findAll')->bind('api_operation_findall')->assert('table', '\w+');
         $c->post('/{table}', 'Plugin\EccubeApi\Controller\EccubeApiCRUDController::create')->bind('api_operation_create')->assert('table', '\w+');
         $c->get('/{table}/{id}', 'Plugin\EccubeApi\Controller\EccubeApiCRUDController::find')->bind('api_operation_find')->assert('table', '\w+')->assert('id', '\d+');
