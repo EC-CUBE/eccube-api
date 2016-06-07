@@ -154,6 +154,36 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
         }, 'payment_option');
     }
 
+    public function testFindBlockPosition()
+    {
+        $client = $this->client;
+        $AccessToken = $this->AccessToken;
+        $app = $this->app;
+
+        $this->verifyFind(function ($table_name, $Entity) use ($app, $client, $AccessToken) {
+
+            $crawler = $client->request(
+                'GET',
+                $app->path('api_operation_find_block_position',
+                           array(
+                               'page_id' => $Entity->getPageId(),
+                               'target_id' => $Entity->getTargetId(),
+                               'block_id' => $Entity->getBlockId()
+                           )),
+                array(),
+                array(),
+                array(
+                    'HTTP_AUTHORIZATION' => 'Bearer '.$AccessToken['token'],
+                    'CONTENT_TYPE' => 'application/json',
+                )
+
+            );
+            $content = json_decode($client->getResponse()->getContent(), true);
+            $Result = array($table_name => array($content[$table_name]));
+            return $Result;
+        }, 'block_position');
+    }
+
     public function testCreate()
     {
         $faker = $this->getFaker();
@@ -372,6 +402,63 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
         $this->verify();
     }
 
+    public function testCreateBlockPosition()
+    {
+        $faker = $this->getFaker();
+        $client = $this->client;
+        $metadata = EntityUtil::findMetadata($this->app, 'block_position');
+        $className = $metadata->getName();
+
+        $Page = $this->app['eccube.repository.page_layout']->find(1);
+        $Block = $this->app['eccube.repository.block']->find(1);
+        $target_id = 999;
+
+        $Entity = new \Eccube\Entity\BlockPosition();
+        $Entity->setPageId($Page->getId());
+        $Entity->setPageLayout($Page);
+        $Entity->setBlockId($Block->getId());
+        $Entity->setBlock($Block);
+        $Entity->setTargetId($target_id);
+        $Entity->setAnywhere(0);
+        $Entity->setBlockRow(100);
+
+        $arrayEntity = EntityUtil::entityToArray($this->app, $Entity);
+
+        $url = $this->app->url('api_operation_create_block_position');
+        $crawler = $this->client->request(
+            'POST',
+            $url,
+            array(),
+            array(),
+            array(
+                'HTTP_AUTHORIZATION' => 'Bearer '.$this->AccessToken['token'],
+                'CONTENT_TYPE' => 'application/json',
+            ),
+            json_encode($arrayEntity)
+        );
+
+        $this->expected = 201;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify($this->client->getResponse()->getContent());
+        $this->assertTrue($this->client->getResponse()->isSuccessful());
+
+        $this->expected = $url.'/page_id/'.$Page->getId().'/target_id/'.$target_id.'/block_id/'.$Block->getId();
+        $this->actual = $client->getResponse()->headers->get('Location');
+        $this->verify('Location ヘッダが一致するか？');
+
+        $this->app['orm.em']->detach($Entity); // キャッシュを取得しないように detach する
+        $Created = $this->app['orm.em']->getRepository($className)->findOneBy(
+            array(
+                'page_id' => $Page->getId(),
+                'target_id' => $target_id,
+                'block_id' => $Block->getId()
+            )
+        );
+        $this->expected = 100;
+        $this->actual = $Created->getBlockRow();
+        $this->verify();
+    }
+
     public function testUpdateProductCategory()
     {
         $faker = $this->getFaker();
@@ -436,6 +523,68 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
         );
         $this->expected = 888;
         $this->actual = $Created->getRank();
+        $this->verify();
+    }
+
+    public function testUpdateBlockPosition()
+    {
+        $faker = $this->getFaker();
+        $client = $this->client;
+        $metadata = EntityUtil::findMetadata($this->app, 'block_position');
+        $className = $metadata->getName();
+
+        $Page = $this->app['eccube.repository.page_layout']->find(1);
+        $Block = $this->app['eccube.repository.block']->find(1);
+        $target_id = 999;
+
+        $Entity = new \Eccube\Entity\BlockPosition();
+        $Entity->setPageId($Page->getId());
+        $Entity->setPageLayout($Page);
+        $Entity->setBlockId($Block->getId());
+        $Entity->setBlock($Block);
+        $Entity->setTargetId($target_id);
+        $Entity->setAnywhere(0);
+        $Entity->setBlockRow(100);
+        $this->app['orm.em']->persist($Entity);
+        $this->app['orm.em']->flush($Entity);
+
+        $arrayEntity = EntityUtil::entityToArray($this->app, $Entity);
+        $arrayEntity['block_row'] = 777;
+
+        $url = $this->app->url('api_operation_update_block_position',
+                               array(
+                                   'page_id' => $Page->getId(),
+                                   'target_id' => $target_id,
+                                   'block_id' => $Block->getId()
+                               )
+        );
+        $crawler = $this->client->request(
+            'PUT',
+            $url,
+            array(),
+            array(),
+            array(
+                'HTTP_AUTHORIZATION' => 'Bearer '.$this->AccessToken['token'],
+                'CONTENT_TYPE' => 'application/json',
+            ),
+            json_encode($arrayEntity)
+        );
+
+        $this->expected = 204;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify($this->client->getResponse()->getContent());
+        $this->assertTrue($this->client->getResponse()->isSuccessful());
+
+        $this->app['orm.em']->detach($Entity); // キャッシュを取得しないように detach する
+        $Created = $this->app['orm.em']->getRepository($className)->findOneBy(
+            array(
+                'page_id' => $Page->getId(),
+                'target_id' => $target_id,
+                'block_id' => $Block->getId()
+            )
+        );
+        $this->expected = 777;
+        $this->actual = $Created->getBlockRow();
         $this->verify();
     }
 

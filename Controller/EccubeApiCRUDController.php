@@ -117,6 +117,24 @@ class EccubeApiCRUDController extends AbstractApiController
     }
 
     /**
+     * \Eccube\Entity\BlockPosition を検索する.
+     */
+    public function findBlockPosition(Application $app, Request $request, $page_id = 0, $target_id = 0, $block_id = 0)
+    {
+        // TODO 検索結果が0件の場合は 404 を返す.
+        return $this->findEntity($app, $request,
+                                 function ($page_id, $target_id, $block_id, $className) use ($app) {
+                                     return $app['orm.em']->getRepository($className)->findOneBy(
+                                         array(
+                                             'page_id' => $page_id,
+                                             'target_id' => $target_id,
+                                             'block_id' => $block_id
+                                     ));
+                                 },
+                                 array($page_id, $target_id, $block_id), 'block_position');
+    }
+
+    /**
      * コールバック関数を指定してエンティティを検索する.
      *
      * @param Application $app
@@ -195,6 +213,23 @@ class EccubeApiCRUDController extends AbstractApiController
     }
 
     /**
+     * \Eccube\Entity\BlockPosition を生成する.
+     */
+    public function createBlockPosition(Application $app, Request $request)
+    {
+        return $this->createEntity($app, $request, function ($Response, $table, $Entity) use ($app) {
+            $Response->headers->set("Location", $app->url('api_operation_find_block_position',
+                                                          array(
+                                                              'page_id' => $Entity->getPageId(),
+                                                              'target_id' => $Entity->getTargetId(),
+                                                              'block_id' => $Entity->getBlockId()
+                                                          )));
+
+            return;
+        }, 'block_position');
+    }
+
+    /**
      * コールバック関数を指定してエンティティを生成する.
      */
     protected function createEntity(Application $app, Request $request, callable $callback, $table = null)
@@ -255,6 +290,24 @@ class EccubeApiCRUDController extends AbstractApiController
                                            ));
                                    },
                                    array($product_id, $category_id), 'product_category');
+    }
+
+    /**
+     * \Eccube\Entity\BlockPosition を更新する.
+     */
+    public function updateBlockPosition(Application $app, Request $request, $page_id = 0, $target_id = 0, $block_id = 0)
+    {
+        // TODO エンティティが存在しない場合は 404 を返す.
+        return $this->updateEntity($app, $request,
+                                   function ($page_id, $target_id, $block_id, $className) use ($app) {
+                                       return $app['orm.em']->getRepository($className)->findOneBy(
+                                           array(
+                                               'page_id' => $page_id,
+                                               'target_id' => $target_id,
+                                               'block_id' => $block_id
+                                           ));
+                                   },
+                                   array($page_id, $target_id, $block_id), 'block_position');
     }
 
     /**
