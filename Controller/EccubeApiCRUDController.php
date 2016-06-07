@@ -100,6 +100,23 @@ class EccubeApiCRUDController extends AbstractApiController
     }
 
     /**
+     * \Eccube\Entity\PaymentOption を検索する.
+     */
+    public function findPaymentOption(Application $app, Request $request, $delivery_id = 0, $payment_id = 0)
+    {
+        // TODO 検索結果が0件の場合は 404 を返す.
+        return $this->findEntity($app, $request,
+                                 function ($delivery_id, $payment_id, $className) use ($app) {
+                                     return $app['orm.em']->getRepository($className)->findOneBy(
+                                         array(
+                                             'delivery_id' => $delivery_id,
+                                             'payment_id' => $payment_id
+                                     ));
+                                 },
+                                 array($delivery_id, $payment_id), 'payment_option');
+    }
+
+    /**
      * コールバック関数を指定してエンティティを検索する.
      *
      * @param Application $app
@@ -162,6 +179,22 @@ class EccubeApiCRUDController extends AbstractApiController
     }
 
     /**
+     * \Eccube\Entity\PaymentOption を生成する.
+     */
+    public function createPaymentOption(Application $app, Request $request)
+    {
+        return $this->createEntity($app, $request, function ($Response, $table, $Entity) use ($app) {
+            $Response->headers->set("Location", $app->url('api_operation_find_payment_option',
+                                                          array(
+                                                              'delivery_id' => $Entity->getDeliveryId(),
+                                                              'payment_id' => $Entity->getPaymentId()
+                                                          )));
+
+            return;
+        }, 'payment_option');
+    }
+
+    /**
      * コールバック関数を指定してエンティティを生成する.
      */
     protected function createEntity(Application $app, Request $request, callable $callback, $table = null)
@@ -194,6 +227,9 @@ class EccubeApiCRUDController extends AbstractApiController
         }
     }
 
+    /**
+     * ID を指定してエンティティを更新する.
+     */
     public function update(Application $app, Request $request, $table = null, $id = 0)
     {
         return $this->updateEntity($app, $request,

@@ -125,6 +125,35 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
         }, 'product_category');
     }
 
+    public function testFindPaymentOption()
+    {
+        $client = $this->client;
+        $AccessToken = $this->AccessToken;
+        $app = $this->app;
+
+        $this->verifyFind(function ($table_name, $Entity) use ($app, $client, $AccessToken) {
+
+            $crawler = $client->request(
+                'GET',
+                $app->path('api_operation_find_payment_option',
+                           array(
+                               'delivery_id' => $Entity->getDeliveryId(),
+                               'payment_id' => $Entity->getPaymentId()
+                           )),
+                array(),
+                array(),
+                array(
+                    'HTTP_AUTHORIZATION' => 'Bearer '.$AccessToken['token'],
+                    'CONTENT_TYPE' => 'application/json',
+                )
+
+            );
+            $content = json_decode($client->getResponse()->getContent(), true);
+            $Result = array($table_name => array($content[$table_name]));
+            return $Result;
+        }, 'payment_option');
+    }
+
     public function testCreate()
     {
         $faker = $this->getFaker();
@@ -279,6 +308,67 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
         );
         $this->expected = 999;
         $this->actual = $Created->getRank();
+        $this->verify();
+    }
+
+    public function testCreatePaymentOption()
+    {
+        $faker = $this->getFaker();
+        $client = $this->client;
+        $metadata = EntityUtil::findMetadata($this->app, 'payment_option');
+        $className = $metadata->getName();
+
+        $Delivery = $this->app['eccube.repository.delivery']->find(1);
+        $Payment = new \Eccube\Entity\Payment();
+        $Payment
+            ->setMethod($faker->word)
+            ->setCharge($faker->numberBetween(1, 99999))
+            ->setRuleMin($faker->numberBetween(1, 99999))
+            ->setRuleMax($faker->numberBetween(1, 99999))
+            ->setCreator($this->Member)
+            ->setDelFlg(Constant::DISABLED);
+        $this->app['orm.em']->persist($Payment);
+        $this->app['orm.em']->flush($Payment);
+
+        $Entity = new \Eccube\Entity\PaymentOption();
+        $Entity->setPayment($Payment);
+        $Entity->setPaymentId($Payment->getId());
+        $Entity->setDelivery($Delivery);
+        $Entity->setDeliveryId($Delivery->getId());
+
+        $arrayEntity = EntityUtil::entityToArray($this->app, $Entity);
+
+        $url = $this->app->url('api_operation_create_payment_option');
+        $crawler = $this->client->request(
+            'POST',
+            $url,
+            array(),
+            array(),
+            array(
+                'HTTP_AUTHORIZATION' => 'Bearer '.$this->AccessToken['token'],
+                'CONTENT_TYPE' => 'application/json',
+            ),
+            json_encode($arrayEntity)
+        );
+
+        $this->expected = 201;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify($this->client->getResponse()->getContent());
+        $this->assertTrue($this->client->getResponse()->isSuccessful());
+
+        $this->expected = $url.'/delivery_id/'.$Delivery->getId().'/payment_id/'.$Payment->getId();
+        $this->actual = $client->getResponse()->headers->get('Location');
+        $this->verify('Location ヘッダが一致するか？');
+
+        $this->app['orm.em']->detach($Entity); // キャッシュを取得しないように detach する
+        $Created = $this->app['orm.em']->getRepository($className)->findOneBy(
+            array(
+                'delivery_id' => $Delivery->getId(),
+                'payment_id' => $Payment->getId()
+            )
+        );
+        $this->expected = $arrayEntity;
+        $this->actual = EntityUtil::entityToArray($this->app, $Created);
         $this->verify();
     }
 

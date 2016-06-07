@@ -83,6 +83,7 @@ class EccubeApiServiceProvider implements ServiceProviderInterface
         // api
         $c = $app['controllers_factory'];
 
+        // product_category
         $c->get('/product_category/product_id/{product_id}/category_id/{category_id}',
                 'Plugin\EccubeApi\Controller\EccubeApiCRUDController::findProductCategory')
             ->bind('api_operation_find_product_category')
@@ -95,6 +96,16 @@ class EccubeApiServiceProvider implements ServiceProviderInterface
             ->bind('api_operation_update_product_category')
             ->assert('product_id', '\d+')
             ->assert('category_id', '\d+');
+
+        // payment_option キーのみのテーブルなので get と post のみ
+        $c->get('/payment_option/delivery_id/{delivery_id}/payment_id/{payment_id}',
+                'Plugin\EccubeApi\Controller\EccubeApiCRUDController::findPaymentOption')
+            ->bind('api_operation_find_payment_option')
+            ->assert('delivery_id', '\d+')
+            ->assert('payment_id', '\d+');
+        $c->post('/payment_option', 'Plugin\EccubeApi\Controller\EccubeApiCRUDController::createPaymentOption')
+            ->bind('api_operation_create_payment_option');
+
 
         $c->get('/{table}', 'Plugin\EccubeApi\Controller\EccubeApiCRUDController::findAll')->bind('api_operation_findall')->assert('table', '\w+');
         $c->post('/{table}', 'Plugin\EccubeApi\Controller\EccubeApiCRUDController::create')->bind('api_operation_create')->assert('table', '\w+');
