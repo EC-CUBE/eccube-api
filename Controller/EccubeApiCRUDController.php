@@ -130,8 +130,7 @@ class EccubeApiCRUDController extends AbstractApiController
     {
         $scope_reuqired = 'product_category_read';
         $is_authorized = $this->verifyRequest($app, $request, $scope_reuqired);
-        if (preg_match('/Bearer (\w+)/', $request->headers->get('authorization'))
-            && $this->requireAuthorization($table)) {
+        if (preg_match('/Bearer (\w+)/', $request->headers->get('authorization'))) {
             // Bearer トークンが存在する場合は認証チェック
             if (!$is_authorized) {
                 return $app['oauth2.server.resource']->getResponse();

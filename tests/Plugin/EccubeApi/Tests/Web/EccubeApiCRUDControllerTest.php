@@ -222,6 +222,17 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
                 default:
             }
 
+            // 未使用のため除外
+            switch ($table_name) {
+                case 'country':
+                case 'zip':
+                case 'authority':
+                case 'category_count':
+                case 'category_total_count':
+                    continue 2;
+                default:
+            }
+
             $Entity = $this->app['orm.em']->getRepository($className)->findOneBy(array());
             // 各テーブル特有の処理
             switch ($table_name) {
@@ -619,6 +630,17 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
                 default:
             }
 
+            // 未使用のため除外
+            switch ($table_name) {
+                case 'country':
+                case 'zip':
+                case 'authority':
+                case 'category_count':
+                case 'category_total_count':
+                    continue 2;
+                default:
+            }
+
             $properties = $this->createProperties($metadata);
             $Entity = $this->app['orm.em']->getRepository($className)->findOneBy(array());
             $Entity->setPropertiesFromArray($properties);
@@ -683,6 +705,17 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
                 default:
             }
 
+            // 未使用のため除外
+            switch ($table_name) {
+                case 'country':
+                case 'zip':
+                case 'authority':
+                case 'category_count':
+                case 'category_total_count':
+                    continue 2;
+                default:
+            }
+
             $Entity = $this->app['orm.em']->getRepository($className)->findOneBy(array());
 
             // XXX 複合キーの対応
@@ -738,6 +771,16 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
             if (!is_null($target_table_name) && $target_table_name != $table_name) {
                 // $target_table_name が指定されていたら, それ以外は除外
                 continue;
+            }
+
+            // 未使用のため除外
+            switch ($table_name) {
+                case 'country':
+                case 'zip':
+                case 'authority':
+                case 'category_count':
+                case 'category_total_count':
+                    continue 2;
             }
 
             // Entity のデータチェックのため、1件だけ取得する
