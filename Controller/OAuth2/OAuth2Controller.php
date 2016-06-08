@@ -3,6 +3,7 @@
 namespace Plugin\EccubeApi\Controller\OAuth2;
 
 use Eccube\Application;
+use Eccube\Common\Constant;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use OAuth2\HttpFoundationBridge\Response as BridgeResponse;
@@ -120,6 +121,7 @@ class OAuth2Controller extends AbstractApiController
         if ($app->user() instanceof \Eccube\Entity\Member) {
             $view = 'EccubeApi/Resource/template/admin/OAuth2/authorization.twig';
         }
+        $Scopes = $app['eccube.repository.oauth2.scope']->findByString($scope, $app->user());
         return $app->render(
             $view,
             array(
@@ -130,7 +132,8 @@ class OAuth2Controller extends AbstractApiController
                 'scope' => $scope,
                 'scopeAsJson' => json_encode($scopes),
                 'nonce' => $nonce,
-                'form' => $form->createView()
+                'form' => $form->createView(),
+                'Scopes' => $Scopes
             )
         );
     }

@@ -33,32 +33,39 @@ class EccubeApiCRUDController extends AbstractApiController
      */
     public function findAll(Application $app, Request $request, $table = null)
     {
-        // TODO 暫定
-        $scope_reuqired = 'read';
+        $metadata = EntityUtil::findMetadata($app, $table);
+        if (!is_object($metadata)) {
+            throw new NotFoundHttpException();
+        }
+
+        $scope_reuqired = $table.'_read';
         $is_authorized = $this->verifyRequest($app, $request, $scope_reuqired);
         $AccessToken = $app['oauth2.server.resource']->getAccessTokenData(
             BridgeRequest::createFromRequest($request),
             $app['oauth2.server.resource']->getResponse()
         );
-        if (preg_match('/Bearer (\w+)/', $request->headers->get('authorization'))) {
+        if (preg_match('/Bearer (\w+)/', $request->headers->get('authorization'))
+            || $this->requireAuthorization($table)) {
             // Bearer トークンが存在する場合は認証チェック
             if (!$is_authorized) {
                 return $app['oauth2.server.resource']->getResponse();
             }
 
-            // Member で認証済みかどうか
-            if (!$AccessToken['client']->hasMember()) {
-                if ($table == 'order') { // TODO 暫定
-                    $this->addErrors($app, 403, 'Access Forbidden');
-                    return $this->getWrapperedResponseBy($app, $this->getErrors(), 403);
+            // Customer で認証済みの場合
+            if ($AccessToken['client']->hasCustomer()) {
+                switch ($table) {
+                    case 'customer_read':
+                    case 'customer_address_read':
+                    case 'order_read':
+                    case 'order_detail_read':
+                        break;
+                    default:
+                        $this->addErrors($app, 403, 'Access Forbidden');
+                        return $this->getWrapperedResponseBy($app, $this->getErrors(), 403);
                 }
             }
         }
 
-        $metadata = EntityUtil::findMetadata($app, $table);
-        if (!is_object($metadata)) {
-            throw new NotFoundHttpException();
-        }
         $className = $metadata->getName();
 
         $Repository = $app['orm.em']->getRepository($className);
@@ -76,6 +83,39 @@ class EccubeApiCRUDController extends AbstractApiController
      */
     public function find(Application $app, Request $request, $table = null, $id = 0)
     {
+        $metadata = EntityUtil::findMetadata($app, $table);
+        if (!is_object($metadata)) {
+            throw new NotFoundHttpException();
+        }
+
+        $scope_reuqired = $table.'_read';
+        $is_authorized = $this->verifyRequest($app, $request, $scope_reuqired);
+        $AccessToken = $app['oauth2.server.resource']->getAccessTokenData(
+            BridgeRequest::createFromRequest($request),
+            $app['oauth2.server.resource']->getResponse()
+        );
+        if (preg_match('/Bearer (\w+)/', $request->headers->get('authorization'))
+            || $this->requireAuthorization($table)) {
+            // Bearer トークンが存在する場合は認証チェック
+            if (!$is_authorized) {
+                return $app['oauth2.server.resource']->getResponse();
+            }
+
+            // Customer で認証済みの場合
+            if ($AccessToken['client']->hasCustomer()) {
+                switch ($table) {
+                    case 'customer_read':
+                    case 'customer_address_read':
+                    case 'order_read':
+                    case 'order_detail_read':
+                        break;
+                    default:
+                        $this->addErrors($app, 403, 'Access Forbidden');
+                        return $this->getWrapperedResponseBy($app, $this->getErrors(), 403);
+                }
+            }
+        }
+
         return $this->findEntity($app, $request,
                                  function ($id, $className) use ($app) {
                                      return $app['orm.em']->getRepository($className)->find($id);
@@ -88,6 +128,16 @@ class EccubeApiCRUDController extends AbstractApiController
      */
     public function findProductCategory(Application $app, Request $request, $product_id = 0, $category_id = 0)
     {
+        $scope_reuqired = 'product_category_read';
+        $is_authorized = $this->verifyRequest($app, $request, $scope_reuqired);
+        if (preg_match('/Bearer (\w+)/', $request->headers->get('authorization'))
+            && $this->requireAuthorization($table)) {
+            // Bearer トークンが存在する場合は認証チェック
+            if (!$is_authorized) {
+                return $app['oauth2.server.resource']->getResponse();
+            }
+        }
+
         // TODO 検索結果が0件の場合は 404 を返す.
         return $this->findEntity($app, $request,
                                  function ($product_id, $category_id, $className) use ($app) {
@@ -105,6 +155,11 @@ class EccubeApiCRUDController extends AbstractApiController
      */
     public function findPaymentOption(Application $app, Request $request, $delivery_id = 0, $payment_id = 0)
     {
+        $scope_reuqired = 'payment_option_read';
+        if (!$this->verifyRequest($app, $request, $scope_reuqired)) {
+            return $app['oauth2.server.resource']->getResponse();
+        }
+
         // TODO 検索結果が0件の場合は 404 を返す.
         return $this->findEntity($app, $request,
                                  function ($delivery_id, $payment_id, $className) use ($app) {
@@ -122,6 +177,11 @@ class EccubeApiCRUDController extends AbstractApiController
      */
     public function findBlockPosition(Application $app, Request $request, $page_id = 0, $target_id = 0, $block_id = 0)
     {
+        $scope_reuqired = 'block_position_read';
+        if (!$this->verifyRequest($app, $request, $scope_reuqired)) {
+            return $app['oauth2.server.resource']->getResponse();
+        }
+
         // TODO 検索結果が0件の場合は 404 を返す.
         return $this->findEntity($app, $request,
                                  function ($page_id, $target_id, $block_id, $className) use ($app) {
@@ -147,12 +207,6 @@ class EccubeApiCRUDController extends AbstractApiController
      */
     protected function findEntity(Application $app, Request $request, callable $callback = null, array $params_arr = array(), $table = null)
     {
-        // TODO 暫定
-        $scope_reuqired = 'read';
-        if (!$this->verifyRequest($app, $request, $scope_reuqired)) {
-            return $app['oauth2.server.resource']->getResponse();
-        }
-
         $metadata = EntityUtil::findMetadata($app, $table);
         if (!is_object($metadata)) {
             throw new NotFoundHttpException();
@@ -235,16 +289,16 @@ class EccubeApiCRUDController extends AbstractApiController
      */
     protected function createEntity(Application $app, Request $request, callable $callback, $table = null)
     {
-        // TODO 暫定
-        $scope_reuqired = 'write';
-        if (!$this->verifyRequest($app, $request, $scope_reuqired)) {
-            return $app['oauth2.server.resource']->getResponse();
-        }
-
         $metadata = EntityUtil::findMetadata($app, $table);
         if (!is_object($metadata)) {
             throw new NotFoundHttpException();
         }
+
+        $scope_reuqired = $table.'_read '.$table.'_write';
+        if (!$this->verifyRequest($app, $request, $scope_reuqired)) {
+            return $app['oauth2.server.resource']->getResponse();
+        }
+
         $className = $metadata->getName();
         $Entity = new $className;
         EntityUtil::copyRelatePropertiesFromArray($app, $Entity, $request->request->all());
@@ -315,16 +369,16 @@ class EccubeApiCRUDController extends AbstractApiController
      */
     public function updateEntity(Application $app, Request $request, callable $callback, array $params_arr = array(), $table = null)
     {
-        // TODO 暫定
-        $scope_reuqired = 'write';
-        if (!$this->verifyRequest($app, $request, $scope_reuqired)) {
-            return $app['oauth2.server.resource']->getResponse();
-        }
-
         $metadata = EntityUtil::findMetadata($app, $table);
         if (!is_object($metadata)) {
             throw new NotFoundHttpException();
         }
+
+        $scope_reuqired = $table.'_read '.$table.'_write';
+        if (!$this->verifyRequest($app, $request, $scope_reuqired)) {
+            return $app['oauth2.server.resource']->getResponse();
+        }
+
         $className = $metadata->getName();
         $params_arr[] = $className;
 
@@ -345,16 +399,15 @@ class EccubeApiCRUDController extends AbstractApiController
      */
     public function delete(Application $app, Request $request, $table = null, $id = 0)
     {
-        // TODO 暫定
-        $scope_reuqired = 'write';
-        if (!$this->verifyRequest($app, $request, $scope_reuqired)) {
-            return $app['oauth2.server.resource']->getResponse();
-        }
-
         $metadata = EntityUtil::findMetadata($app, $table);
         if (!is_object($metadata)) {
             throw new NotFoundHttpException();
         }
+        $scope_reuqired = $table.'_read '.$table.'_write';
+        if (!$this->verifyRequest($app, $request, $scope_reuqired)) {
+            return $app['oauth2.server.resource']->getResponse();
+        }
+
         if (!array_key_exists('del_flg', $metadata->fieldMappings)) {
             // TODO エラーメッセージ
             return $this->getWrapperedResponseBy($app, $this->getErrors(), 405);
@@ -371,5 +424,26 @@ class EccubeApiCRUDController extends AbstractApiController
         }
 
         return $this->getWrapperedResponseBy($app, null, 204);
+    }
+
+    /**
+     * Customer で認証の必要なテーブルかどうか.
+     */
+    protected function requireAuthorization($table)
+    {
+        switch ($table) {
+            case 'news':
+            case 'product':
+            case 'product_class':
+            case 'product_image':
+            case 'product_tag':
+            case 'product_category':
+            case 'job':
+            case 'pref':
+            case 'sex':
+                return false;
+            default:
+                return true;
+        }
     }
 }
