@@ -93,9 +93,17 @@ class AbstractEccubeApiTestCase extends AbstractWebTestCase
         $UserInfo = new UserInfo();
         $UserInfo->setAddress(new UserInfoAddress());
         if ($User instanceof \Eccube\Entity\Customer) {
+            $Exists = $this->app['eccube.repository.oauth2.openid.userinfo']->findOneBy(array('Customer' => $User));
+            if (is_object($Exists)) {
+                return $Exists;
+            }
             $UserInfo->setCustomer($User);
             $UserInfo->mergeCustomer();
         } else {
+            $Exists = $this->app['eccube.repository.oauth2.openid.userinfo']->findOneBy(array('Member' => $User));
+            if (is_object($Exists)) {
+                return $Exists;
+            }
             $UserInfo->setMember($User);
             $UserInfo->mergeMember();
         }

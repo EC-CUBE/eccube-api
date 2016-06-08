@@ -15,6 +15,7 @@ use Eccube\Application;
 use Eccube\Common\Constant;
 use Eccube\Entry\AbstractEntity;
 use Plugin\EccubeApi\Util\EntityUtil;
+use OAuth2\HttpFoundationBridge\Request as BridgeRequest;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -34,9 +35,9 @@ class EccubeApiCRUDController extends AbstractApiController
     {
         // TODO 暫定
         $scope_reuqired = 'read';
-        $is_authorized = $this->verifyRequest($app, $scope_reuqired);
+        $is_authorized = $this->verifyRequest($app, $request, $scope_reuqired);
         $AccessToken = $app['oauth2.server.resource']->getAccessTokenData(
-            \OAuth2\Request::createFromGlobals(),
+            BridgeRequest::createFromRequest($request),
             $app['oauth2.server.resource']->getResponse()
         );
         if (preg_match('/Bearer (\w+)/', $request->headers->get('authorization'))) {
@@ -148,7 +149,7 @@ class EccubeApiCRUDController extends AbstractApiController
     {
         // TODO 暫定
         $scope_reuqired = 'read';
-        if (!$this->verifyRequest($app, $scope_reuqired)) {
+        if (!$this->verifyRequest($app, $request, $scope_reuqired)) {
             return $app['oauth2.server.resource']->getResponse();
         }
 
@@ -236,11 +237,10 @@ class EccubeApiCRUDController extends AbstractApiController
     {
         // TODO 暫定
         $scope_reuqired = 'write';
-        if (!$this->verifyRequest($app, $scope_reuqired)) {
+        if (!$this->verifyRequest($app, $request, $scope_reuqired)) {
             return $app['oauth2.server.resource']->getResponse();
         }
 
-        $this->verifyRequest($app);
         $metadata = EntityUtil::findMetadata($app, $table);
         if (!is_object($metadata)) {
             throw new NotFoundHttpException();
@@ -317,7 +317,7 @@ class EccubeApiCRUDController extends AbstractApiController
     {
         // TODO 暫定
         $scope_reuqired = 'write';
-        if (!$this->verifyRequest($app, $scope_reuqired)) {
+        if (!$this->verifyRequest($app, $request, $scope_reuqired)) {
             return $app['oauth2.server.resource']->getResponse();
         }
 
@@ -347,7 +347,7 @@ class EccubeApiCRUDController extends AbstractApiController
     {
         // TODO 暫定
         $scope_reuqired = 'write';
-        if (!$this->verifyRequest($app, $scope_reuqired)) {
+        if (!$this->verifyRequest($app, $request, $scope_reuqired)) {
             return $app['oauth2.server.resource']->getResponse();
         }
 

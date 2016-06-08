@@ -34,8 +34,6 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
         // OAuth2.0 認証処理
         $client = $this->loginTo($this->Member);
         $this->AccessToken = $this->doAuthorized($this->Member);
-        // $_SERVER に入れておかないと認証されない
-        $_SERVER['HTTP_AUTHORIZATION'] = 'Bearer '.$this->AccessToken['token'];
     }
 
     public function testFindAll()

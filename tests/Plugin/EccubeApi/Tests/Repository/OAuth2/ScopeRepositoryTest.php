@@ -17,6 +17,12 @@ class ScopeRepositoryTest extends AbstractEccubeApiTestCase
     public function setUp()
     {
         parent::setUp();
+        $ClientScopes = $this->app['eccube.repository.oauth2.clientscope']->findAll();
+        foreach ($ClientScopes as $ClientScope) {
+            $this->app['orm.em']->remove($ClientScope);
+            $this->app['orm.em']->flush($ClientScope);
+        }
+
         $Scopes = $this->app['eccube.repository.oauth2.scope']->findAll();
         foreach ($Scopes as $Scope) {
             $this->app['orm.em']->remove($Scope);
