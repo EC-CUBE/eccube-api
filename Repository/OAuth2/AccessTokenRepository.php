@@ -50,8 +50,14 @@ class AccessTokenRepository extends EntityRepository implements AccessTokenInter
     {
         $client = $this->_em->getRepository('Plugin\EccubeApi\Entity\OAuth2\Client')
                             ->findOneBy(array('client_identifier' => $clientIdentifier));
-        // UserInfo::sub ではなく UserInfo::id が渡ってくることに注意
-        $user = $this->_em->getRepository('Plugin\EccubeApi\Entity\OAuth2\OpenID\UserInfo')->find($user_id);
+        // response_type=token の時は UserInfo::id が渡ってくる. それ以外は UserInfo::sub が渡ってくる
+        $searchConditions = array();
+        if (is_numeric($user_id)) {
+            $searchConditions['id'] = $user_id;
+        } else {
+            $searchConditions['sub'] = $user_id;
+        }
+        $user = $this->_em->getRepository('Plugin\EccubeApi\Entity\OAuth2\OpenID\UserInfo')->findOneBy($searchConditions);
         $AccessToken = new \Plugin\EccubeApi\Entity\OAuth2\AccessToken();
         $now = new \DateTime();
         $AccessToken->setPropertiesFromArray(array(

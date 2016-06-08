@@ -6,6 +6,7 @@ use Eccube\Application;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use OAuth2\HttpFoundationBridge\Response as BridgeResponse;
+use OAuth2\HttpFoundationBridge\Request as BridgeRequest;
 use OAuth2\Encryption\FirebaseJwt as Jwt;
 use Plugin\EccubeApi\Controller\AbstractApiController;
 
@@ -39,7 +40,7 @@ class OAuth2Controller extends AbstractApiController
         $nonce = $request->get('nonce');
         $is_authorized = (boolean)$request->get('authorized');
 
-        $BridgeRequest = \OAuth2\HttpFoundationBridge\Request::createFromGlobals();
+        $BridgeRequest = BridgeRequest::createFromRequest($request);
         $Response = new BridgeResponse();
         $form = $app['form.factory']->createNamed(
             '',                 // 無名のフォームを生成
@@ -173,7 +174,7 @@ class OAuth2Controller extends AbstractApiController
      */
     public function token(Application $app, Request $request)
     {
-        return $app['oauth2.server.token']->handleTokenRequest(\OAuth2\HttpFoundationBridge\Request::createFromGlobals(), new BridgeResponse());
+        return $app['oauth2.server.token']->handleTokenRequest(BridgeRequest::createFromRequest($request), new BridgeResponse());
     }
 
     /**
@@ -222,6 +223,6 @@ class OAuth2Controller extends AbstractApiController
      */
     public function userInfo(Application $app, Request $request)
     {
-        return $app['oauth2.server.resource']->handleUserInfoRequest(\OAuth2\HttpFoundationBridge\Request::createFromGlobals(), new BridgeResponse());
+        return $app['oauth2.server.resource']->handleUserInfoRequest(BridgeRequest::createFromRequest($request), new BridgeResponse());
     }
 }

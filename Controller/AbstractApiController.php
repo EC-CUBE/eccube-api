@@ -8,6 +8,7 @@ use Doctrine\ORM\PersistentCollection;
 use Doctrine\ORM\Proxy\Proxy;
 use Symfony\Component\HttpFoundation\Request;
 use OAuth2\HttpFoundationBridge\Response as BridgeResponse;
+use OAuth2\HttpFoundationBridge\Request as BridgeRequest;
 
 /**
  * ApiController の抽象クラス.
@@ -30,10 +31,10 @@ abstract class AbstractApiController
      * @param string $scope_required API リクエストで必要とする scope
      * @return boolean 妥当と判定された場合 true
      */
-    protected function verifyRequest(Application $app, $scope_reuqired = null)
+    protected function verifyRequest(Application $app, Request $request, $scope_reuqired = null)
     {
         return $app['oauth2.server.resource']->verifyResourceRequest(
-            \OAuth2\Request::createFromGlobals(),
+            BridgeRequest::createFromRequest($request),
             new BridgeResponse(),
             $scope_reuqired
         );
