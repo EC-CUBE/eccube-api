@@ -46,8 +46,26 @@ class EccubeApiCRUDController extends AbstractApiController
 
         $Repository = $app['orm.em']->getRepository($className);
         $Results = array();
+
+        $AccessToken = $this->getAccessToken($app, $request);
+        $searchConditions = array();
+        // Customer で認証されている場合
+        if (is_array($AccessToken) && $AccessToken['client']->hasCustomer()) {
+            switch ($table) {
+                case 'customer':
+                     $searchConditions['id'] = $AccessToken['client']->getCustomer()->getId();
+                    break;
+
+                case 'customer_address':
+                case 'order':
+                case 'order_detail':
+                    $searchConditions['Customer'] = $AccessToken['client']->getCustomer();
+                    break;
+            }
+        }
+
         // TODO LIMIT, OFFSET が必要
-        foreach ($Repository->findAll() as $Entity) {
+        foreach ($Repository->findBy($searchConditions) as $Entity) {
             $Results[] = EntityUtil::entityToArray($app, $Entity);
         }
 
@@ -68,11 +86,33 @@ class EccubeApiCRUDController extends AbstractApiController
             return $response;
         }
 
-        return $this->findEntity($app, $request,
-                                 function ($id, $className) use ($app) {
-                                     return $app['orm.em']->getRepository($className)->find($id);
-                                 },
-                                 array($id), $table);
+        $Result = $this->findEntity($app, $request,
+                                    function ($id, $className) use ($app, $table) {
+                                        return $app['orm.em']->getRepository($className)->find($id);
+                                    },
+                                    array($id), $table);
+
+        // Customer で認証されている場合は結果をチェック
+        $AccessToken = $this->getAccessToken($app, $request);
+        if (is_array($AccessToken) && $AccessToken['client']->hasCustomer()) {
+            switch ($table) {
+                case 'customer':
+                    if ($id != $AccessToken['client']->getCustomer()->getId()) {
+                        return $this->getWrapperedErrorResponseBy($app, 'Access Forbidden', 403);
+                    }
+                    break;
+
+                case 'customer_address':
+                case 'order':
+                case 'order_detail':
+                    if ($Result[$table]['Customer']['id'] != $AccessToken['client']->getCustomer()->getId()) {
+                        return $this->getWrapperedErrorResponseBy($app, 'Access Forbidden', 403);
+                    }
+                    break;
+            }
+        }
+
+        return $Result;
     }
 
     /**
@@ -237,6 +277,7 @@ class EccubeApiCRUDController extends AbstractApiController
 
     /**
      * コールバック関数を指定してエンティティを生成する.
+     * TODO パスワードの置き換え
      */
     protected function createEntity(Application $app, Request $request, callable $callback, $table = null)
     {
@@ -253,6 +294,21 @@ class EccubeApiCRUDController extends AbstractApiController
         $className = $metadata->getName();
         $Entity = new $className;
         EntityUtil::copyRelatePropertiesFromArray($app, $Entity, $request->request->all());
+
+        // Customer で認証されている場合
+        $AccessToken = $this->getAccessToken($app, $request);
+        if (is_array($AccessToken) && $AccessToken['client']->hasCustomer()) {
+            switch ($table) {
+                case 'customer':
+                    return $this->getWrapperedErrorResponseBy($app, 'Access Forbidden', 403);
+                    break;
+                case 'customer_address':
+                    if ($Entity->getCustomer()->getId() != $AccessToken['client']->getCustomer()->getId()) {
+                        return $this->getWrapperedErrorResponseBy($app, 'Access Forbidden', 403);
+                    }
+                    break;
+            }
+        }
 
         try {
             $app['orm.em']->persist($Entity);
@@ -317,6 +373,7 @@ class EccubeApiCRUDController extends AbstractApiController
 
     /**
      * コールバック関数を指定してエンティティを更新する.
+     * TODO パスワードの置き換え
      */
     public function updateEntity(Application $app, Request $request, callable $callback, array $params_arr = array(), $table = null)
     {
@@ -335,6 +392,24 @@ class EccubeApiCRUDController extends AbstractApiController
 
         $Entity = call_user_func_array($callback, $params_arr);
         EntityUtil::copyRelatePropertiesFromArray($app, $Entity, $request->request->all());
+
+        // Customer で認証されている場合
+        $AccessToken = $this->getAccessToken($app, $request);
+        if (is_array($AccessToken) && $AccessToken['client']->hasCustomer()) {
+            switch ($table) {
+                case 'customer':
+                    if ($Entity->getId() != $AccessToken['client']->getCustomer()->getId()) {
+                        return $this->getWrapperedErrorResponseBy($app, 'Access Forbidden', 403);
+                    }
+                    break;
+                case 'customer_address':
+                    if ($Entity->getCustomer()->getId() != $AccessToken['client']->getCustomer()->getId()) {
+                        return $this->getWrapperedErrorResponseBy($app, 'Access Forbidden', 403);
+                    }
+                    break;
+            }
+        }
+
         try {
             $app['orm.em']->flush($Entity);
             return $this->getWrapperedResponseBy($app, null, 204);
@@ -366,6 +441,22 @@ class EccubeApiCRUDController extends AbstractApiController
 
         $Repository = $app['orm.em']->getRepository($className);
         $Entity = $Repository->find($id);
+
+        // Customer で認証されている場合
+        $AccessToken = $this->getAccessToken($app, $request);
+        if (is_array($AccessToken) && $AccessToken['client']->hasCustomer()) {
+            switch ($table) {
+                case 'customer':
+                    return $this->getWrapperedErrorResponseBy($app, 'Access Forbidden', 403);
+                    break;
+                case 'customer_address':
+                    if ($Entity->getCustomer()->getId() != $AccessToken['client']->getCustomer()->getId()) {
+                        return $this->getWrapperedErrorResponseBy($app, 'Access Forbidden', 403);
+                    }
+                    break;
+            }
+        }
+
         try {
             $Entity->setDelFlg(Constant::ENABLED);
             $app['orm.em']->flush($Entity);
@@ -415,10 +506,7 @@ class EccubeApiCRUDController extends AbstractApiController
 
         $scope_reuqired = $table.'_read';
         $is_authorized = $this->verifyRequest($app, $request, $scope_reuqired);
-        $AccessToken = $app['oauth2.server.resource']->getAccessTokenData(
-            BridgeRequest::createFromRequest($request),
-            $app['oauth2.server.resource']->getResponse()
-        );
+        $AccessToken = $this->getAccessToken($app, $request);
         if ($this->hasBearerTokenHeader($request)
             || $this->requireAuthorization($table)) {
             // Bearer トークンが存在する場合は認証チェック
@@ -429,10 +517,10 @@ class EccubeApiCRUDController extends AbstractApiController
             // Customer で認証すれば参照可能なテーブル
             if ($AccessToken['client']->hasCustomer()) {
                 switch ($table) {
-                    case 'customer_read':
-                    case 'customer_address_read':
-                    case 'order_read':
-                    case 'order_detail_read':
+                    case 'customer':
+                    case 'customer_address':
+                    case 'order':
+                    case 'order_detail':
                         break;
                     default:
                         return $this->getWrapperedErrorResponseBy($app, 'Access Forbidden', 403);
@@ -448,5 +536,17 @@ class EccubeApiCRUDController extends AbstractApiController
     protected function hasBearerTokenHeader(Request $request)
     {
         return preg_match('/Bearer (\w+)/', $request->headers->get('authorization')) > 0;
+    }
+
+    /**
+     * Request から AccessToken を取得します.
+     */
+    protected function getAccessToken(Application $app, Request $request)
+    {
+        $AccessToken = $app['oauth2.server.resource']->getAccessTokenData(
+            BridgeRequest::createFromRequest($request),
+            $app['oauth2.server.resource']->getResponse()
+        );
+        return $AccessToken;
     }
 }

@@ -71,10 +71,12 @@ class ApiClientController
             $searchConditions = array('Member' => $User);
             $view = 'EccubeApi/Resource/template/admin/Api/edit.twig';
             $is_admin = true;
+            $scope_key = 'member_flg';
         } else {
             $User = $app['eccube.repository.customer']->find($app->user()->getId());
             $searchConditions = array('Customer' => $User);
             $view = 'EccubeApi/Resource/template/mypage/Api/edit.twig';
+            $scope_key = 'customer_flg';
         }
 
         // Client が保持する Scope の配列を取得する
@@ -93,6 +95,21 @@ class ApiClientController
         $PublicKey = $app['eccube.repository.oauth2.openid.public_key']->findOneBy(array('UserInfo' => $UserInfo));
 
         $builder = $app['form.factory']->createBuilder('admin_api_client', $Client);
+        $builder->remove('Scopes');
+        $ListScopes = $app['eccube.repository.oauth2.scope']->findBy(array('is_default' => true, $scope_key => 1));
+        $builder->add('Scopes', 'entity', array(
+                'label' => 'scope',
+                'choice_label' => 'label',
+                'choice_value' => 'scope',
+                'choice_name' => 'scope',
+                'multiple' => true,
+                'expanded' => true,
+                'mapped' => false,
+                'required' => false,
+                'choices' => $ListScopes,
+                'class' => 'Plugin\EccubeApi\Entity\OAuth2\Scope'
+        ));
+
         $form = $builder->getForm();
 
         $form['Scopes']->setData($Scopes);
@@ -164,16 +181,33 @@ class ApiClientController
             $searchConditions = array('Member' => $User);
             $view = 'EccubeApi/Resource/template/admin/Api/lists.twig';
             $is_admin = true;
+            $scope_key = 'member_flg';
         } else {
             $User = $app['eccube.repository.customer']->find($app->user()->getId());
             $searchConditions = array('Customer' => $User);
             $view = 'EccubeApi/Resource/template/mypage/Api/lists.twig';
+            $scope_key = 'customer_flg';
         }
         $Client = new \Plugin\EccubeApi\Entity\OAuth2\Client();
 
         $builder = $app['form.factory']->createBuilder('admin_api_client', $Client);
+        $builder->remove('Scopes');
+        $Scopes = $app['eccube.repository.oauth2.scope']->findBy(array('is_default' => true, $scope_key => 1));
+        $builder->add('Scopes', 'entity', array(
+                'label' => 'scope',
+                'choice_label' => 'label',
+                'choice_value' => 'scope',
+                'choice_name' => 'scope',
+                'multiple' => true,
+                'expanded' => true,
+                'mapped' => false,
+                'required' => false,
+                'choices' => $Scopes,
+                'class' => 'Plugin\EccubeApi\Entity\OAuth2\Scope'
+        ));
+
         $form = $builder->getForm();
-        $Scopes = $app['eccube.repository.oauth2.scope']->findBy(array('is_default' => true));
+
         $form['Scopes']->setData($Scopes);
         $form['encryption_algorithm']->setData(self::DEFAULT_ENCRYPTION_ALGORITHM);
 
