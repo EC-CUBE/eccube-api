@@ -98,4 +98,19 @@ abstract class AbstractApiController
 
         return array('errors' => $errors);
     }
+
+    /**
+     * エラーレスポンスを返します.
+     *
+     * @param Application $app
+     * @param string $message エラーメッセージ
+     * @param integer $statusCode 返却する HTTP Status コード
+     * @return \OAuth2\HttpFoundationBridge\Response でラップしたレスポンス.
+
+     */
+    protected function getWrapperedErrorResponseBy(Application $app, $message = 'Not found', $statusCode = 404)
+    {
+        $this->addErrors($app, $statusCode, $message);
+        return $this->getWrapperedResponseBy($app, $this->getErrors(), $statusCode);
+    }
 }

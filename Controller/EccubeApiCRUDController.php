@@ -35,37 +35,13 @@ class EccubeApiCRUDController extends AbstractApiController
     {
         $metadata = EntityUtil::findMetadata($app, $table);
         if (!is_object($metadata)) {
-            throw new NotFoundHttpException();
+            return $this->getWrapperedErrorResponseBy($app);
         }
 
-        $scope_reuqired = $table.'_read';
-        $is_authorized = $this->verifyRequest($app, $request, $scope_reuqired);
-        $AccessToken = $app['oauth2.server.resource']->getAccessTokenData(
-            BridgeRequest::createFromRequest($request),
-            $app['oauth2.server.resource']->getResponse()
-        );
-        if (preg_match('/Bearer (\w+)/', $request->headers->get('authorization'))
-            || $this->requireAuthorization($table)) {
-            // Bearer トークンが存在する場合は認証チェック
-            if (!$is_authorized) {
-                return $app['oauth2.server.resource']->getResponse();
-            }
-
-            // Customer で認証済みの場合
-            if ($AccessToken['client']->hasCustomer()) {
-                switch ($table) {
-                    case 'customer_read':
-                    case 'customer_address_read':
-                    case 'order_read':
-                    case 'order_detail_read':
-                        break;
-                    default:
-                        $this->addErrors($app, 403, 'Access Forbidden');
-                        return $this->getWrapperedResponseBy($app, $this->getErrors(), 403);
-                }
-            }
+        $response = $this->doAuthorizedByFind($app, $request, $table);
+        if ($response !== true) {
+            return $response;
         }
-
         $className = $metadata->getName();
 
         $Repository = $app['orm.em']->getRepository($className);
@@ -85,35 +61,11 @@ class EccubeApiCRUDController extends AbstractApiController
     {
         $metadata = EntityUtil::findMetadata($app, $table);
         if (!is_object($metadata)) {
-            throw new NotFoundHttpException();
+            return $this->getWrapperedErrorResponseBy($app);
         }
-
-        $scope_reuqired = $table.'_read';
-        $is_authorized = $this->verifyRequest($app, $request, $scope_reuqired);
-        $AccessToken = $app['oauth2.server.resource']->getAccessTokenData(
-            BridgeRequest::createFromRequest($request),
-            $app['oauth2.server.resource']->getResponse()
-        );
-        if (preg_match('/Bearer (\w+)/', $request->headers->get('authorization'))
-            || $this->requireAuthorization($table)) {
-            // Bearer トークンが存在する場合は認証チェック
-            if (!$is_authorized) {
-                return $app['oauth2.server.resource']->getResponse();
-            }
-
-            // Customer で認証済みの場合
-            if ($AccessToken['client']->hasCustomer()) {
-                switch ($table) {
-                    case 'customer_read':
-                    case 'customer_address_read':
-                    case 'order_read':
-                    case 'order_detail_read':
-                        break;
-                    default:
-                        $this->addErrors($app, 403, 'Access Forbidden');
-                        return $this->getWrapperedResponseBy($app, $this->getErrors(), 403);
-                }
-            }
+        $response = $this->doAuthorizedByFind($app, $request, $table);
+        if ($response !== true) {
+            return $response;
         }
 
         return $this->findEntity($app, $request,
@@ -130,7 +82,7 @@ class EccubeApiCRUDController extends AbstractApiController
     {
         $scope_reuqired = 'product_category_read';
         $is_authorized = $this->verifyRequest($app, $request, $scope_reuqired);
-        if (preg_match('/Bearer (\w+)/', $request->headers->get('authorization'))) {
+        if ($this->hasBearerTokenHeader($request)) {
             // Bearer トークンが存在する場合は認証チェック
             if (!$is_authorized) {
                 return $app['oauth2.server.resource']->getResponse();
@@ -208,7 +160,7 @@ class EccubeApiCRUDController extends AbstractApiController
     {
         $metadata = EntityUtil::findMetadata($app, $table);
         if (!is_object($metadata)) {
-            throw new NotFoundHttpException();
+            return $this->getWrapperedErrorResponseBy($app);
         }
         $className = $metadata->getName();
         $params_arr[] = $className;
@@ -290,7 +242,7 @@ class EccubeApiCRUDController extends AbstractApiController
     {
         $metadata = EntityUtil::findMetadata($app, $table);
         if (!is_object($metadata)) {
-            throw new NotFoundHttpException();
+            return $this->getWrapperedErrorResponseBy($app);
         }
 
         $scope_reuqired = $table.'_read '.$table.'_write';
@@ -370,7 +322,7 @@ class EccubeApiCRUDController extends AbstractApiController
     {
         $metadata = EntityUtil::findMetadata($app, $table);
         if (!is_object($metadata)) {
-            throw new NotFoundHttpException();
+            return $this->getWrapperedErrorResponseBy($app);
         }
 
         $scope_reuqired = $table.'_read '.$table.'_write';
@@ -382,7 +334,6 @@ class EccubeApiCRUDController extends AbstractApiController
         $params_arr[] = $className;
 
         $Entity = call_user_func_array($callback, $params_arr);
-        // $Entity = $app['orm.em']->getRepository($className)->find($id);
         EntityUtil::copyRelatePropertiesFromArray($app, $Entity, $request->request->all());
         try {
             $app['orm.em']->flush($Entity);
@@ -400,7 +351,7 @@ class EccubeApiCRUDController extends AbstractApiController
     {
         $metadata = EntityUtil::findMetadata($app, $table);
         if (!is_object($metadata)) {
-            throw new NotFoundHttpException();
+            return $this->getWrapperedErrorResponseBy($app);
         }
         $scope_reuqired = $table.'_read '.$table.'_write';
         if (!$this->verifyRequest($app, $request, $scope_reuqired)) {
@@ -426,11 +377,12 @@ class EccubeApiCRUDController extends AbstractApiController
     }
 
     /**
-     * Customer で認証の必要なテーブルかどうか.
+     * 認証の必要なテーブルかどうか.
      */
     protected function requireAuthorization($table)
     {
         switch ($table) {
+            // 認証不要なテーブル
             case 'news':
             case 'product':
             case 'product_class':
@@ -444,5 +396,57 @@ class EccubeApiCRUDController extends AbstractApiController
             default:
                 return true;
         }
+    }
+
+    /**
+     * 検索メソッドの認証をします.
+     *
+     * @param Application $app
+     * @param Request $request
+     * @param string $table テーブル名
+     * @return \OAuth2\HttpFoundationBridge\Response|boolean 認証が失敗した場合エラーレスポンス, 成功した場合 true
+     */
+    protected function doAuthorizedByFind(Application $app, Request $request, $table)
+    {
+        $metadata = EntityUtil::findMetadata($app, $table);
+        if (!is_object($metadata)) {
+            return $this->getWrapperedErrorResponseBy($app);
+        }
+
+        $scope_reuqired = $table.'_read';
+        $is_authorized = $this->verifyRequest($app, $request, $scope_reuqired);
+        $AccessToken = $app['oauth2.server.resource']->getAccessTokenData(
+            BridgeRequest::createFromRequest($request),
+            $app['oauth2.server.resource']->getResponse()
+        );
+        if ($this->hasBearerTokenHeader($request)
+            || $this->requireAuthorization($table)) {
+            // Bearer トークンが存在する場合は認証チェック
+            if (!$is_authorized) {
+                return $app['oauth2.server.resource']->getResponse();
+            }
+
+            // Customer で認証すれば参照可能なテーブル
+            if ($AccessToken['client']->hasCustomer()) {
+                switch ($table) {
+                    case 'customer_read':
+                    case 'customer_address_read':
+                    case 'order_read':
+                    case 'order_detail_read':
+                        break;
+                    default:
+                        return $this->getWrapperedErrorResponseBy($app, 'Access Forbidden', 403);
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Authorization ヘッダの Bearer トークンが存在するかどうか.
+     */
+    protected function hasBearerTokenHeader(Request $request)
+    {
+        return preg_match('/Bearer (\w+)/', $request->headers->get('authorization')) > 0;
     }
 }
