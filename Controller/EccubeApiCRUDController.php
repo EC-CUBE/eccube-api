@@ -30,6 +30,13 @@ class EccubeApiCRUDController extends AbstractApiController
 
     /**
      * すべてデータを返す.
+     *
+     * Customer で認証されている場合は、対象の Customer と関連する検索結果に絞り込みをする.
+     *
+     * @param Application $app
+     * @param Request $request
+     * @param string $table 検索対象のテーブル名(dtb_, mtb_ は除去する)
+     * @return \OAuth2\HttpFoundationBridge\Response
      */
     public function findAll(Application $app, Request $request, $table = null)
     {
@@ -73,7 +80,15 @@ class EccubeApiCRUDController extends AbstractApiController
     }
 
     /**
-     * IDを指定してエンティティを検索する
+     * IDを指定してエンティティを検索する.
+     *
+     * Customer で認証されている場合、他の Customer のデータを表示しようとすると HTTP Status 403 を返す.
+     *
+     * @param Application $app
+     * @param Request $request
+     * @param string $table 検索対象のテーブル名(dtb_, mtb_ は除去する)
+     * @param integer $id 検索対象の ID
+     * @return \OAuth2\HttpFoundationBridge\Response
      */
     public function find(Application $app, Request $request, $table = null, $id = 0)
     {
@@ -117,6 +132,14 @@ class EccubeApiCRUDController extends AbstractApiController
 
     /**
      * \Eccube\Entity\ProductCategory を検索する.
+     *
+     * Bearer トークンが存在する場合は認証チェックを行なう.
+     *
+     * @param Application $app
+     * @param Request $request
+     * @param integer $product_id 商品ID
+     * @param integer $category_id カテゴリID
+     * @return \OAuth2\HttpFoundationBridge\Response
      */
     public function findProductCategory(Application $app, Request $request, $product_id = 0, $category_id = 0)
     {
@@ -143,6 +166,12 @@ class EccubeApiCRUDController extends AbstractApiController
 
     /**
      * \Eccube\Entity\PaymentOption を検索する.
+     *
+     * @param Application $app
+     * @param Request $request
+     * @param integer $delivery_id 配送業者ID
+     * @param integer $payment_id 支払い方法ID
+     * @return \OAuth2\HttpFoundationBridge\Response
      */
     public function findPaymentOption(Application $app, Request $request, $delivery_id = 0, $payment_id = 0)
     {
@@ -165,6 +194,14 @@ class EccubeApiCRUDController extends AbstractApiController
 
     /**
      * \Eccube\Entity\BlockPosition を検索する.
+     * Bearer トークンが存在する場合は認証チェックを行なう.
+     *
+     * @param Application $app
+     * @param Request $request
+     * @param integer $page_id ページID
+     * @param integer $target_id ターゲットID
+     * @param integer $block_id ブロックID
+     * @return \OAuth2\HttpFoundationBridge\Response
      */
     public function findBlockPosition(Application $app, Request $request, $page_id = 0, $target_id = 0, $block_id = 0)
     {
@@ -189,12 +226,14 @@ class EccubeApiCRUDController extends AbstractApiController
     /**
      * コールバック関数を指定してエンティティを検索する.
      *
+     * コールバック関数は、検索キーとエンティティのクラス名を引数とし、検索結果のエンティティを返す.
+     *
      * @param Application $app
      * @param Request $request
      * @param callable $callback コールバック関数
      * @param array $params_arr コールバック関数の引数
      * @param string $table 検索対象のテーブル名
-     * @return \Symfony\Component\HttpFoundation\JsonResponse|Response
+     * @return \OAuth2\HttpFoundationBridge\Response
      */
     protected function findEntity(Application $app, Request $request, callable $callback = null, array $params_arr = array(), $table = null)
     {
@@ -212,6 +251,11 @@ class EccubeApiCRUDController extends AbstractApiController
 
     /**
      * エンティティを生成する.
+     *
+     * @param Application $app
+     * @param Request $request
+     * @param string $table 生成するテーブル
+     * @return \OAuth2\HttpFoundationBridge\Response
      */
     public function create(Application $app, Request $request, $table = null)
     {
@@ -228,6 +272,10 @@ class EccubeApiCRUDController extends AbstractApiController
 
     /**
      * \Eccube\Entity\ProductCategory を生成する.
+     *
+     * @param Application $app
+     * @param Request $request
+     * @return \OAuth2\HttpFoundationBridge\Response
      */
     public function createProductCategory(Application $app, Request $request)
     {
@@ -244,6 +292,10 @@ class EccubeApiCRUDController extends AbstractApiController
 
     /**
      * \Eccube\Entity\PaymentOption を生成する.
+     *
+     * @param Application $app
+     * @param Request $request
+     * @return \OAuth2\HttpFoundationBridge\Response
      */
     public function createPaymentOption(Application $app, Request $request)
     {
@@ -260,6 +312,10 @@ class EccubeApiCRUDController extends AbstractApiController
 
     /**
      * \Eccube\Entity\BlockPosition を生成する.
+     *
+     * @param Application $app
+     * @param Request $request
+     * @return \OAuth2\HttpFoundationBridge\Response
      */
     public function createBlockPosition(Application $app, Request $request)
     {
@@ -278,6 +334,16 @@ class EccubeApiCRUDController extends AbstractApiController
     /**
      * コールバック関数を指定してエンティティを生成する.
      * TODO パスワードの置き換え
+     *
+     * コールバック関数は、Response, テーブル名, 生成したエンティティを引数とし、 Location ヘッダに生成したリソースの URIをセットする.
+     * 生成に成功した場合は HTTP Status 201 を返し、 Location ヘッダに生成したリソースの URI を出力する.
+     * Customer で認証されている場合は、自分以外の Customer に関連するデータは生成できない.
+     *
+     * @param Application $app
+     * @param Request $request
+     * @param callable $callback コールバック関数
+     * @param string $table データを生成するテーブル名(dtb_, mtb_ は除去する)
+     * @return \OAuth2\HttpFoundationBridge\Response
      */
     protected function createEntity(Application $app, Request $request, callable $callback, $table = null)
     {
@@ -325,6 +391,11 @@ class EccubeApiCRUDController extends AbstractApiController
 
     /**
      * ID を指定してエンティティを更新する.
+     *
+     * @param Application $app
+     * @param Request $request
+     * @param string $table データを更新するテーブル名(dtb_, mtb_ は除去する)
+     * @return \OAuth2\HttpFoundationBridge\Response
      */
     public function update(Application $app, Request $request, $table = null, $id = 0)
     {
@@ -338,6 +409,12 @@ class EccubeApiCRUDController extends AbstractApiController
 
     /**
      * \Eccube\Entity\ProductCategory を更新する.
+     *
+     * @param Application $app
+     * @param Request $request
+     * @param integer $product_id 商品ID
+     * @param integer $category_id カテゴリID
+     * @return \OAuth2\HttpFoundationBridge\Response
      */
     public function updateProductCategory(Application $app, Request $request, $product_id = 0, $category_id = 0)
     {
@@ -355,6 +432,13 @@ class EccubeApiCRUDController extends AbstractApiController
 
     /**
      * \Eccube\Entity\BlockPosition を更新する.
+     *
+     * @param Application $app
+     * @param Request $request
+     * @param integer $page_id ページID
+     * @param integer $target_id ターゲットID
+     * @param integer $block_id ブロックID
+     * @return \OAuth2\HttpFoundationBridge\Response
      */
     public function updateBlockPosition(Application $app, Request $request, $page_id = 0, $target_id = 0, $block_id = 0)
     {
@@ -374,6 +458,17 @@ class EccubeApiCRUDController extends AbstractApiController
     /**
      * コールバック関数を指定してエンティティを更新する.
      * TODO パスワードの置き換え
+     *
+     * コールバック関数は、対象エンティティの検索キー、クラス名を引数とし、更新対象のエンティティを返す.
+     * 更新に成功した場合は HTTP Status 204 を返す.
+     * Customer で認証されている場合は、自分以外の Customer に関連するデータは更新できない.
+
+     * @param Application $app
+     * @param Request $request
+     * @param callable $callback コールバック関数
+     * @param array $params_arr コールバック関数の引数
+     * @param string 更新対象のテーブル名
+     * @return \OAuth2\HttpFoundationBridge\Response
      */
     public function updateEntity(Application $app, Request $request, callable $callback, array $params_arr = array(), $table = null)
     {
@@ -421,6 +516,17 @@ class EccubeApiCRUDController extends AbstractApiController
 
     /**
      * エンティティを削除する.
+     *
+     * このメソッドは、 del_flg フィールドを持つエンティティを論理削除する.
+     * del_flg フィールドのないエンティティを削除しようとした場合は HTTP Status 400 を返す.
+     * 削除に成功した場合、 HTTP Status 204 を返す.
+     * Customer で認証されている場合は、自分以外の Customer に関連するデータは削除できない.
+     *
+     * @param Application $app
+     * @param Request $request
+     * @param string $table テーブル名
+     * @param integer $id 削除対象のID
+     * @return \OAuth2\HttpFoundationBridge\Response
      */
     public function delete(Application $app, Request $request, $table = null, $id = 0)
     {
@@ -469,6 +575,9 @@ class EccubeApiCRUDController extends AbstractApiController
 
     /**
      * 認証の必要なテーブルかどうか.
+     *
+     * @param string $table テーブル名
+     * @return 認証が必要なテーブルの場合 true, 不要なテーブルの場合 false
      */
     protected function requireAuthorization($table)
     {
@@ -532,6 +641,9 @@ class EccubeApiCRUDController extends AbstractApiController
 
     /**
      * Authorization ヘッダの Bearer トークンが存在するかどうか.
+     *
+     * @param Request $request
+     * @return boolean リクエストヘッダに Bearer トークンが存在する場合 true
      */
     protected function hasBearerTokenHeader(Request $request)
     {
@@ -540,6 +652,10 @@ class EccubeApiCRUDController extends AbstractApiController
 
     /**
      * Request から AccessToken を取得します.
+     *
+     * @param Application $app
+     * @param Request $request
+     * @see Plugin\EccubeApi\Repository\OAuth2\AccessTokenRepository::getAccessToken()
      */
     protected function getAccessToken(Application $app, Request $request)
     {
