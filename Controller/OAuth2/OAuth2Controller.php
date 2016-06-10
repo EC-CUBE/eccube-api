@@ -52,7 +52,7 @@ class OAuth2Controller extends AbstractApiController
 
         $is_admin = false;
         // 認可要求
-        if ('POST' === $request->getMethod()) {
+        if ('POST' === $request->getMethod() && $is_authorized) {
             $form->handleRequest($request);
             // 認可要求の妥当性をチェックする(主にURLパラメータ)
             if (!$server->validateAuthorizeRequest($BridgeRequest, $Response)) {
