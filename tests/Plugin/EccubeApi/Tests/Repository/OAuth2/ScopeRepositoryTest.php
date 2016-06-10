@@ -36,15 +36,12 @@ class ScopeRepositoryTest extends AbstractEccubeApiTestCase
         );
 
         foreach ($scopeNames as $name => $label) {
-            $Scope = new \Plugin\EccubeApi\Entity\OAuth2\Scope();
-            $Scope->setLabel($label);
-            $Scope->setScope($name);
+            $Scope = $this->createScope($name, $label);
             if ($name != 'scope_a') {
                 $Scope->setDefault(true);
             } else {
                 $Scope->setDefault(false);
             }
-            $this->app['orm.em']->persist($Scope);
             $this->app['orm.em']->flush($Scope);
         }
     }
@@ -103,5 +100,77 @@ class ScopeRepositoryTest extends AbstractEccubeApiTestCase
         $this->expected = null;
         $this->actual = $this->app['eccube.repository.oauth2.scope']->getDefaultScope();
         $this->verify();
+    }
+
+    public function testFindByStringWithCustomer()
+    {
+        $scopeNames = array(
+            'customer_1' => '会員1',
+            'customer_2' => '会員2',
+            'customer_3' => '会員3'
+        );
+        $Customer = $this->createCustomer();
+
+        foreach ($scopeNames as $name => $label) {
+            $Scope = $this->createScope($name, $label);
+            $Scope->setCustomerFlg(1);
+            $this->app['orm.em']->flush($Scope);
+        }
+
+        $scope_required = 'customer_3 customer_1';
+
+        $Results = $this->app['eccube.repository.oauth2.scope']->findByString($scope_required, $Customer);
+        $this->expected = 2;
+        $this->actual = count($Results);
+        $this->verify();
+
+        foreach ($Results as $Scope) {
+            $this->assertTrue(in_array($Scope->getScope(), explode(' ', $scope_required)),
+                              $scope_required.' に '.$Scope->getScope().' が見つかりません');
+        }
+    }
+
+    public function testFindByStringWithMember()
+    {
+        $scopeNames = array(
+            'member_1' => '会員1',
+            'member_2' => '会員2',
+            'member_3' => '会員3'
+        );
+        $Member = $this->app['eccube.repository.member']->find(2);
+
+        foreach ($scopeNames as $name => $label) {
+            $Scope = $this->createScope($name, $label);
+            $Scope->setMemberFlg(1);
+            $this->app['orm.em']->flush($Scope);
+        }
+
+        $scope_required = 'member_3 member_1';
+
+        $Results = $this->app['eccube.repository.oauth2.scope']->findByString($scope_required, $Member);
+        $this->expected = 2;
+        $this->actual = count($Results);
+        $this->verify();
+
+        foreach ($Results as $Scope) {
+            $this->assertTrue(in_array($Scope->getScope(), explode(' ', $scope_required)),
+                              $scope_required.' に '.$Scope->getScope().' が見つかりません');
+        }
+    }
+
+    /**
+     * @param string $name
+     * @param string $label
+     * @return \Plugin\EccubeApi\Entity\OAuth2\Scope
+     */
+    protected function createScope($name, $label)
+    {
+        $Scope = new \Plugin\EccubeApi\Entity\OAuth2\Scope();
+        $Scope->setLabel($label);
+        $Scope->setScope($name);
+        $Scope->setDefault(true);
+        $this->app['orm.em']->persist($Scope);
+        $this->app['orm.em']->flush($Scope);
+        return $Scope;
     }
 }
