@@ -143,8 +143,8 @@ class EccubeApiCRUDController extends AbstractApiController
      */
     public function findProductCategory(Application $app, Request $request, $product_id = 0, $category_id = 0)
     {
-        $scope_reuqired = 'product_category_read';
-        $is_authorized = $this->verifyRequest($app, $request, $scope_reuqired);
+        $scope_required = 'product_category_read';
+        $is_authorized = $this->verifyRequest($app, $request, $scope_required);
         if ($this->hasBearerTokenHeader($request)) {
             // Bearer トークンが存在する場合は認証チェック
             if (!$is_authorized) {
@@ -175,8 +175,8 @@ class EccubeApiCRUDController extends AbstractApiController
      */
     public function findPaymentOption(Application $app, Request $request, $delivery_id = 0, $payment_id = 0)
     {
-        $scope_reuqired = 'payment_option_read';
-        if (!$this->verifyRequest($app, $request, $scope_reuqired)) {
+        $scope_required = 'payment_option_read';
+        if (!$this->verifyRequest($app, $request, $scope_required)) {
             return $app['oauth2.server.resource']->getResponse();
         }
 
@@ -205,8 +205,8 @@ class EccubeApiCRUDController extends AbstractApiController
      */
     public function findBlockPosition(Application $app, Request $request, $page_id = 0, $target_id = 0, $block_id = 0)
     {
-        $scope_reuqired = 'block_position_read';
-        if (!$this->verifyRequest($app, $request, $scope_reuqired)) {
+        $scope_required = 'block_position_read';
+        if (!$this->verifyRequest($app, $request, $scope_required)) {
             return $app['oauth2.server.resource']->getResponse();
         }
 
@@ -352,8 +352,8 @@ class EccubeApiCRUDController extends AbstractApiController
             return $this->getWrapperedErrorResponseBy($app);
         }
 
-        $scope_reuqired = $table.'_read '.$table.'_write';
-        if (!$this->verifyRequest($app, $request, $scope_reuqired)) {
+        $scope_required = $table.'_read '.$table.'_write';
+        if (!$this->verifyRequest($app, $request, $scope_required)) {
             return $app['oauth2.server.resource']->getResponse();
         }
 
@@ -477,8 +477,8 @@ class EccubeApiCRUDController extends AbstractApiController
             return $this->getWrapperedErrorResponseBy($app);
         }
 
-        $scope_reuqired = $table.'_read '.$table.'_write';
-        if (!$this->verifyRequest($app, $request, $scope_reuqired)) {
+        $scope_required = $table.'_read '.$table.'_write';
+        if (!$this->verifyRequest($app, $request, $scope_required)) {
             return $app['oauth2.server.resource']->getResponse();
         }
 
@@ -534,8 +534,8 @@ class EccubeApiCRUDController extends AbstractApiController
         if (!is_object($metadata)) {
             return $this->getWrapperedErrorResponseBy($app);
         }
-        $scope_reuqired = $table.'_read '.$table.'_write';
-        if (!$this->verifyRequest($app, $request, $scope_reuqired)) {
+        $scope_required = $table.'_read '.$table.'_write';
+        if (!$this->verifyRequest($app, $request, $scope_required)) {
             return $app['oauth2.server.resource']->getResponse();
         }
 
@@ -613,8 +613,8 @@ class EccubeApiCRUDController extends AbstractApiController
             return $this->getWrapperedErrorResponseBy($app);
         }
 
-        $scope_reuqired = $table.'_read';
-        $is_authorized = $this->verifyRequest($app, $request, $scope_reuqired);
+        $scope_required = $table.'_read';
+        $is_authorized = $this->verifyRequest($app, $request, $scope_required);
         $AccessToken = $this->getAccessToken($app, $request);
         if ($this->hasBearerTokenHeader($request)
             || $this->requireAuthorization($table)) {

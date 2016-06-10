@@ -31,12 +31,12 @@ abstract class AbstractApiController
      * @param string $scope_required API リクエストで必要とする scope
      * @return boolean 妥当と判定された場合 true
      */
-    protected function verifyRequest(Application $app, Request $request, $scope_reuqired = null)
+    protected function verifyRequest(Application $app, Request $request, $scope_required = null)
     {
         return $app['oauth2.server.resource']->verifyResourceRequest(
             BridgeRequest::createFromRequest($request),
             new BridgeResponse(),
-            $scope_reuqired
+            $scope_required
         );
     }
 

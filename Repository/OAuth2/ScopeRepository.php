@@ -51,6 +51,10 @@ class ScopeRepository extends EntityRepository implements ScopeInterface
 
     /**
      * スペース区切りの scope の文字列とユーザーが使用可能なスコープを返します.
+     *
+     * @param string $scope スーペース区切りの scope の文字列
+     * @param UserInterface 対象のユーザー
+     * @return array Scope の配列
      */
     public function findByString($scope, UserInterface $User)
     {
