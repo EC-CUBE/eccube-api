@@ -26,8 +26,14 @@ class UserInfoRepository extends EntityRepository implements UserClaimsInterface
      * @return array 要求されたクレームの配列
      */
     public function getUserClaims($user_id, $scope) {
-        // UserInfo::sub ではなく UserInfo::id が渡ってくることに注意
-        $UserInfo =  $this->findOneBy(array('id' => $user_id));
+        // response_type=token の時は UserInfo::id が渡ってくる. それ以外は UserInfo::sub が渡ってくる
+        if (is_numeric($user_id)) {
+            $searchConditions['id'] = $user_id;
+        } else {
+            $searchConditions['sub'] = $user_id;
+        }
+
+        $UserInfo =  $this->findOneBy($searchConditions);
         if (!is_object($UserInfo)) {
             return array();
         }
