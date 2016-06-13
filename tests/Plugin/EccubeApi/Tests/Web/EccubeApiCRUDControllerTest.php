@@ -749,6 +749,145 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
         }
     }
 
+    public function testFindOnceWithNotFound()
+    {
+        $crawler = $this->client->request(
+            'GET',
+            $this->app->path('api_operation_find', array('table' => 'product', 'id' => 999999999)),
+            array(),
+            array(),
+            array(
+                'CONTENT_TYPE' => 'application/json',
+            )
+        );
+
+        $this->expected = 404;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+    }
+
+    public function testFindMultipleIdWithNotFound()
+    {
+        $crawler = $this->client->request(
+            'GET',
+            $this->app->path('api_operation_find', array('table' => 'product_category', 'id' => 999999999)),
+            array(),
+            array(),
+            array(
+                'CONTENT_TYPE' => 'application/json',
+            )
+        );
+
+        $this->expected = 400;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+    }
+
+    public function testFindOnceWithNoAuthorization()
+    {
+        $crawler = $this->client->request(
+            'GET',
+            $this->app->path('api_operation_find', array('table' => 'product_class', 'id' => 5)),
+            array(),
+            array(),
+            array(
+                'CONTENT_TYPE' => 'application/json',
+            )
+        );
+
+        $this->expected = 200;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+    }
+
+    public function testUpdateWithNotFound()
+    {
+        $Entity = $this->app['eccube.repository.product']->find(1);
+        $arrayEntity = EntityUtil::entityToArray($this->app, $Entity);
+        $url = $this->app->url('api_operation_put', array('table' => 'product', 'id' => 999999999));
+        $crawler = $this->client->request(
+            'PUT',
+            $url,
+            array(),
+            array(),
+            array(
+                'HTTP_AUTHORIZATION' => 'Bearer '.$this->AccessToken['token'],
+                'CONTENT_TYPE' => 'application/json',
+            ),
+            json_encode($arrayEntity)
+        );
+
+        $this->expected = 404;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+    }
+
+    public function testUpdateMultipleIdWithNotFound()
+    {
+        $Entity = $this->app['orm.em']->getRepository('\\Eccube\\Entity\\ProductCategory')->findOneBy(array());
+        $arrayEntity = EntityUtil::entityToArray($this->app, $Entity);
+        $url = $this->app->url('api_operation_put', array('table' => 'product_category', 'id' => 999999999));
+        $crawler = $this->client->request(
+            'PUT',
+            $url,
+            array(),
+            array(),
+            array(
+                'HTTP_AUTHORIZATION' => 'Bearer '.$this->AccessToken['token'],
+                'CONTENT_TYPE' => 'application/json',
+            ),
+            json_encode($arrayEntity)
+        );
+
+        $this->expected = 400;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+    }
+
+    public function testDeleteWithNotFound()
+    {
+        $Entity = $this->app['eccube.repository.product']->find(1);
+        $arrayEntity = EntityUtil::entityToArray($this->app, $Entity);
+        $url = $this->app->url('api_operation_delete', array('table' => 'product', 'id' => 999999999));
+        $crawler = $this->client->request(
+            'DELETE',
+            $url,
+            array(),
+            array(),
+            array(
+                'HTTP_AUTHORIZATION' => 'Bearer '.$this->AccessToken['token'],
+                'CONTENT_TYPE' => 'application/json',
+            ),
+            json_encode($arrayEntity)
+        );
+
+        $this->expected = 404;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+    }
+
+    public function testDeleteMultipleWithNotFound()
+    {
+        $Entity = $this->app['eccube.repository.product']->find(1);
+        $arrayEntity = EntityUtil::entityToArray($this->app, $Entity);
+        $url = $this->app->url('api_operation_delete', array('table' => 'product_category', 'id' => 999999999));
+        $crawler = $this->client->request(
+            'DELETE',
+            $url,
+            array(),
+            array(),
+            array(
+                'HTTP_AUTHORIZATION' => 'Bearer '.$this->AccessToken['token'],
+                'CONTENT_TYPE' => 'application/json',
+            ),
+            json_encode($arrayEntity)
+        );
+
+        $this->expected = 405;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+    }
+
     protected function verifyFind($callback, $target_table_name = null)
     {
         $client = $this->client;

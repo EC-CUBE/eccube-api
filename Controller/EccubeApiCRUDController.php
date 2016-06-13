@@ -101,12 +101,28 @@ class EccubeApiCRUDController extends AbstractApiController
             return $response;
         }
 
-        $Result = $this->findEntity($app, $request,
+        $Result = $this->getWrapperedErrorResponseBy($app);
+        try {
+            $Result = $this->findEntity($app, $request,
                                     function ($id, $className) use ($app, $table) {
-                                        return $app['orm.em']->getRepository($className)->find($id);
+                                        $Entity = $app['orm.em']->getRepository($className)->find($id);
+                                        if (!is_object($Entity)) {
+                                            throw new NotFoundHttpException();
+                                        }
+                                        return $Entity;
                                     },
                                     array($id), $table);
+        } catch (NotFoundHttpException $e) {
+            return $Result;
+        } catch (\Exception $e) {
+            $this->addErrors($app, 400, $e->getMessage());
+            return $this->getWrapperedResponseBy($app, $this->getErrors(), 400);
+        }
 
+        // Bearer トークンが存在しない場合はレスポンスを返す
+        if (!$this->hasBearerTokenHeader($request)) {
+            return $Result;
+        }
         // Customer で認証されている場合は結果をチェック
         $AccessToken = $this->getAccessToken($app, $request);
         if (is_array($AccessToken) && $AccessToken['client']->hasCustomer()) {
@@ -418,7 +434,6 @@ class EccubeApiCRUDController extends AbstractApiController
      */
     public function updateProductCategory(Application $app, Request $request, $product_id = 0, $category_id = 0)
     {
-        // TODO エンティティが存在しない場合は 404 を返す.
         return $this->updateEntity($app, $request,
                                    function ($product_id, $category_id, $className) use ($app) {
                                        return $app['orm.em']->getRepository($className)->findOneBy(
@@ -442,7 +457,6 @@ class EccubeApiCRUDController extends AbstractApiController
      */
     public function updateBlockPosition(Application $app, Request $request, $page_id = 0, $target_id = 0, $block_id = 0)
     {
-        // TODO エンティティが存在しない場合は 404 を返す.
         return $this->updateEntity($app, $request,
                                    function ($page_id, $target_id, $block_id, $className) use ($app) {
                                        return $app['orm.em']->getRepository($className)->findOneBy(
@@ -485,7 +499,17 @@ class EccubeApiCRUDController extends AbstractApiController
         $className = $metadata->getName();
         $params_arr[] = $className;
 
-        $Entity = call_user_func_array($callback, $params_arr);
+        $Entity = null;
+        try {
+            $Entity = call_user_func_array($callback, $params_arr);
+        } catch (\Exception $e) {
+            $this->addErrors($app, 400, $e->getMessage());
+            return $this->getWrapperedResponseBy($app, $this->getErrors(), 400);
+        }
+
+        if (!is_object($Entity)) {
+            return $this->getWrapperedErrorResponseBy($app);
+        }
         EntityUtil::copyRelatePropertiesFromArray($app, $Entity, $request->request->all());
 
         // Customer で認証されている場合
@@ -540,13 +564,15 @@ class EccubeApiCRUDController extends AbstractApiController
         }
 
         if (!array_key_exists('del_flg', $metadata->fieldMappings)) {
-            // TODO エラーメッセージ
-            return $this->getWrapperedResponseBy($app, $this->getErrors(), 405);
+            return $this->getWrapperedErrorResponseBy($app, 'Method Not Allowed', 405);
         }
         $className = $metadata->getName();
 
         $Repository = $app['orm.em']->getRepository($className);
         $Entity = $Repository->find($id);
+        if (!is_object($Entity)) {
+            return $this->getWrapperedErrorResponseBy($app);
+        }
 
         // Customer で認証されている場合
         $AccessToken = $this->getAccessToken($app, $request);
