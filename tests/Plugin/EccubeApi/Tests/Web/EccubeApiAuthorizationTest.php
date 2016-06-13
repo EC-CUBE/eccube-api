@@ -13,6 +13,8 @@ class EccubeApiAuthorizationTest extends AbstractEccubeApiWebTestCase
     protected $MemberClient;
     protected $MemberUserInfo;
     protected $scope_granted;
+    protected $state;
+    protected $nonce;
 
     public function setUp()
     {
@@ -32,6 +34,9 @@ class EccubeApiAuthorizationTest extends AbstractEccubeApiWebTestCase
             $this->addClientScope($this->CustomerClient, $Scope->getScope());
             $this->addClientScope($this->MemberClient, $Scope->getScope());
         }
+
+        $this->state = sha1(openssl_random_pseudo_bytes(100));
+        $this->nonce = sha1(openssl_random_pseudo_bytes(100));
     }
 
     /**
@@ -45,8 +50,8 @@ class EccubeApiAuthorizationTest extends AbstractEccubeApiWebTestCase
                     'client_id' => $this->MemberClient->getClientIdentifier(),
                     'redirect_uri' => $this->MemberClient->getRedirectUri(),
                     'response_type' => 'code',
-                    'state' => 'random_state',
-                    'nonce' => 'random_nonce',
+                    'state' => $this->state,
+                    'nonce' => $this->nonce,
                     'scope' => $this->scope_granted,
         );
 
@@ -65,7 +70,7 @@ class EccubeApiAuthorizationTest extends AbstractEccubeApiWebTestCase
         $this->assertTrue($this->client->getResponse()->isRedirect());
         $location = $this->client->getResponse()->headers->get('location');
         $this->assertRegExp('/^'.preg_quote($this->MemberClient->getRedirectUri(), '/').'/', $location);
-        preg_match('/^'.preg_quote($this->MemberClient->getRedirectUri(), '/').'\?code=(\w+)&state=random_state/', $location, $matched);
+        preg_match('/^'.preg_quote($this->MemberClient->getRedirectUri(), '/').'\?code=(\w+)&state='.$this->state.'/', $location, $matched);
 
         $authorization_code = $matched[1];
         $AuthorizationCode = $this->app['eccube.repository.oauth2.authorization_code']->getAuthorizationCode($authorization_code);
@@ -91,8 +96,8 @@ class EccubeApiAuthorizationTest extends AbstractEccubeApiWebTestCase
                     'client_id' => $this->CustomerClient->getClientIdentifier(),
                     'redirect_uri' => $this->CustomerClient->getRedirectUri(),
                     'response_type' => 'code',
-                    'state' => 'random_state',
-                    'nonce' => 'random_nonce',
+                    'state' => $this->state,
+                    'nonce' => $this->nonce,
                     'scope' => $this->scope_granted,
         );
 
@@ -111,7 +116,7 @@ class EccubeApiAuthorizationTest extends AbstractEccubeApiWebTestCase
         $this->assertTrue($this->client->getResponse()->isRedirect());
         $location = $this->client->getResponse()->headers->get('location');
         $this->assertRegExp('/^'.preg_quote($this->CustomerClient->getRedirectUri(), '/').'/', $location);
-        preg_match('/^'.preg_quote($this->CustomerClient->getRedirectUri(), '/').'\?code=(\w+)&state=random_state/', $location, $matched);
+        preg_match('/^'.preg_quote($this->CustomerClient->getRedirectUri(), '/').'\?code=(\w+)&state='.$this->state.'/', $location, $matched);
 
         $authorization_code = $matched[1];
         $AuthorizationCode = $this->app['eccube.repository.oauth2.authorization_code']->getAuthorizationCode($authorization_code);
@@ -141,8 +146,8 @@ class EccubeApiAuthorizationTest extends AbstractEccubeApiWebTestCase
                     'client_id' => $this->MemberClient->getClientIdentifier(),
                     'redirect_uri' => $this->MemberClient->getRedirectUri(),
                     'response_type' => 'code',
-                    'state' => 'random_state',
-                    'nonce' => 'random_nonce',
+                    'state' => $this->state,
+                    'nonce' => $this->nonce,
                     'scope' => $this->scope_granted,
         );
 
@@ -197,8 +202,8 @@ class EccubeApiAuthorizationTest extends AbstractEccubeApiWebTestCase
                     'client_id' => $this->CustomerClient->getClientIdentifier(),
                     'redirect_uri' => $this->CustomerClient->getRedirectUri(),
                     'response_type' => 'code',
-                    'state' => 'random_state',
-                    'nonce' => 'random_nonce',
+                    'state' => $this->state,
+                    'nonce' => $this->nonce,
                     'scope' => $this->scope_granted,
         );
 
@@ -251,8 +256,8 @@ class EccubeApiAuthorizationTest extends AbstractEccubeApiWebTestCase
                     'client_id' => $this->MemberClient->getClientIdentifier(),
                     'redirect_uri' => $this->MemberClient->getRedirectUri(),
                     'response_type' => 'code',
-                    'state' => 'random_state',
-                    'nonce' => 'random_nonce',
+                    'state' => $this->state,
+                    'nonce' => $this->nonce,
                     'scope' => $this->scope_granted,
         );
 
@@ -265,7 +270,7 @@ class EccubeApiAuthorizationTest extends AbstractEccubeApiWebTestCase
         $crawler = $client->request('POST', $path, $params);
 
         $location = $client->getResponse()->headers->get('location');
-        preg_match('/\?code=(\w+)&state=random_state/', $location, $matched);
+        preg_match('/\?code=(\w+)&state='.$this->state.'/', $location, $matched);
 
         $authorization_code = $matched[1];
 
@@ -278,8 +283,8 @@ class EccubeApiAuthorizationTest extends AbstractEccubeApiWebTestCase
                 'code' => $authorization_code,
                 'client_id' => $this->MemberClient->getClientIdentifier(),
                 'client_secret' => $this->MemberClient->getClientSecret(),
-                'state' => 'random_state',
-                'nonce' => 'random_nonce',
+                'state' => $this->state,
+                'nonce' => $this->nonce,
                 'redirect_uri' => $this->MemberClient->getRedirectUri()
             )
         );
@@ -339,8 +344,8 @@ class EccubeApiAuthorizationTest extends AbstractEccubeApiWebTestCase
                     'client_id' => $this->CustomerClient->getClientIdentifier(),
                     'redirect_uri' => $this->CustomerClient->getRedirectUri(),
                     'response_type' => 'code',
-                    'state' => 'random_state',
-                    'nonce' => 'random_nonce',
+                    'state' => $this->state,
+                    'nonce' => $this->nonce,
                     'scope' => $this->scope_granted,
         );
 
@@ -350,10 +355,11 @@ class EccubeApiAuthorizationTest extends AbstractEccubeApiWebTestCase
         // 認可要求
         $params['authorized'] = 1;
         $params['_token'] = 'dummy';
-        $crawler = $client->request('POST', $path, $params);
+        // ここで nonce をクエリストリングに含めなくてはならない
+        $crawler = $client->request('POST', $path.'?nonce='.$this->nonce, $params);
 
         $location = $client->getResponse()->headers->get('location');
-        preg_match('/\?code=(\w+)&state=random_state/', $location, $matched);
+        preg_match('/\?code=(\w+)&state='.$this->state.'/', $location, $matched);
 
         $authorization_code = $matched[1];
 
@@ -366,8 +372,8 @@ class EccubeApiAuthorizationTest extends AbstractEccubeApiWebTestCase
                 'code' => $authorization_code,
                 'client_id' => $this->CustomerClient->getClientIdentifier(),
                 'client_secret' => $this->CustomerClient->getClientSecret(),
-                'state' => 'random_state',
-                'nonce' => 'random_nonce',
+                'state' => $this->state,
+                'nonce' => $this->nonce,
                 'redirect_uri' => $this->CustomerClient->getRedirectUri()
             )
         );
@@ -414,6 +420,10 @@ class EccubeApiAuthorizationTest extends AbstractEccubeApiWebTestCase
         $this->expected = $this->CustomerUserInfo->getSub();
         $this->actual = $TokenInfo['sub'];
         $this->verify();
+
+        $this->expected = $this->nonce;
+        $this->actual = $TokenInfo['nonce'];
+        $this->verify('id_token に 発行した nonce が含まれているかどうか');
 
         $PublicKey = $this->app['eccube.repository.oauth2.openid.public_key']->findOneBy(array('UserInfo' => $this->CustomerUserInfo));
         // verify id_token with JWS
