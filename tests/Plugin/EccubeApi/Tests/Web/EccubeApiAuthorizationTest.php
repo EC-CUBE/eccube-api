@@ -20,7 +20,7 @@ class EccubeApiAuthorizationTest extends AbstractEccubeApiWebTestCase
     {
         parent::setUp();
         /** Member, Customer 共に選択可能な scope */
-        $this->scope_granted = 'openid email customer_read customer_write';
+        $this->scope_granted = 'openid email customer_read customer_write customer_address_read';
         $this->Customer = $this->createCustomer();
         $this->CustomerUserInfo = $this->createUserInfo($this->Customer);
         $this->CustomerClient = $this->createApiClient($this->Customer);
@@ -900,5 +900,151 @@ class EccubeApiAuthorizationTest extends AbstractEccubeApiWebTestCase
         $this->actual = $UserInfo['phone_number'];
         $this->verify();
         $this->assertFalse($UserInfo['phone_number_verified'], 'phone_number_verified = false');
+    }
+
+    /**
+     * Customer が退会した場合
+     */
+    public function testDeletedCustomer()
+    {
+        $this->scope_granted = 'customer_read customer_write customer_address_read';
+
+        $client = $this->logInTo($this->Customer);
+        $path = $this->app->path('oauth2_server_mypage_authorize');
+        $params = array(
+                    'client_id' => $this->CustomerClient->getClientIdentifier(),
+                    'redirect_uri' => $this->CustomerClient->getRedirectUri(),
+                    'response_type' => 'token',
+                    'state' => $this->state,
+                    'nonce' => $this->nonce,
+                    'scope' => $this->scope_granted,
+        );
+
+        // GET でリクエストし, 認可画面を表示
+        $crawler = $client->request('GET', $path, $params);
+
+        // 認可要求
+        $params['authorized'] = 1;
+        $params['_token'] = 'dummy';
+        // ここで nonce をクエリストリングに含めなくてはならない
+        $crawler = $client->request('POST', $path.'?nonce='.$this->nonce, $params);
+
+        $location = $client->getResponse()->headers->get('location');
+        $Url = parse_url($location);
+
+        $Fragments = array();
+        foreach (explode('&', $Url['fragment']) as $fragment) {
+            $params = explode('=', $fragment);
+            $Fragments[$params[0]] = urldecode($params[1]);
+        }
+
+        $access_token = $Fragments['access_token'];
+        $CustomerAddress = $this->app['eccube.repository.customer_address']->findOneBy(array('Customer' => $this->Customer));
+
+        $this->Customer->setDelFlg(1); // 退会扱い
+        $this->app['orm.em']->flush();
+        $this->app['orm.em']->detach($this->Customer);
+
+        $AccessToken = $this->app['eccube.repository.oauth2.access_token']->findOneBy(array('token' => $access_token));
+        $this->app['orm.em']->detach($AccessToken); // キャッシュしないよう detach
+
+        // API Request
+        $crawler = $client->request(
+            'GET',
+            $this->app->path('api_operation_find', array('table' => 'customer_address', 'id' => $CustomerAddress->getId())),
+            array(),
+            array(),
+            array(
+                'HTTP_AUTHORIZATION' => 'Bearer '.$access_token,
+                'CONTENT_TYPE' => 'application/json',
+            )
+        );
+
+        $this->expected = 401;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+
+        $ResponseBody = json_decode($this->client->getResponse()->getContent(), true);
+
+        $this->expected = 'invalid_token';
+        $this->actual = $ResponseBody['error'];
+        $this->verify();
+
+        $this->expected = 'The access token provided is invalid';
+        $this->actual = $ResponseBody['error_description'];
+        $this->verify();
+    }
+
+    /**
+     * Member を削除した場合
+     */
+    public function testDeletedMember()
+    {
+        $this->scope_granted = 'customer_read customer_write customer_address_read';
+
+        $client = $this->logInTo($this->Member);
+        $path = $this->app->path('oauth2_server_admin_authorize');
+        $params = array(
+                    'client_id' => $this->MemberClient->getClientIdentifier(),
+                    'redirect_uri' => $this->MemberClient->getRedirectUri(),
+                    'response_type' => 'token',
+                    'state' => $this->state,
+                    'nonce' => $this->nonce,
+                    'scope' => $this->scope_granted,
+        );
+
+        // GET でリクエストし, 認可画面を表示
+        $crawler = $client->request('GET', $path, $params);
+
+        // 認可要求
+        $params['authorized'] = 1;
+        $params['_token'] = 'dummy';
+        // ここで nonce をクエリストリングに含めなくてはならない
+        $crawler = $client->request('POST', $path.'?nonce='.$this->nonce, $params);
+
+        $location = $client->getResponse()->headers->get('location');
+        $Url = parse_url($location);
+
+        $Fragments = array();
+        foreach (explode('&', $Url['fragment']) as $fragment) {
+            $params = explode('=', $fragment);
+            $Fragments[$params[0]] = urldecode($params[1]);
+        }
+
+        $access_token = $Fragments['access_token'];
+        $CustomerAddress = $this->app['eccube.repository.customer_address']->findOneBy(array('Customer' => $this->Customer));
+
+        $this->Member->setDelFlg(1); // 退会扱い
+        $this->app['orm.em']->flush();
+        $this->app['orm.em']->detach($this->Member);
+
+        $AccessToken = $this->app['eccube.repository.oauth2.access_token']->findOneBy(array('token' => $access_token));
+        $this->app['orm.em']->detach($AccessToken); // キャッシュしないよう detach
+
+        // API Request
+        $crawler = $client->request(
+            'GET',
+            $this->app->path('api_operation_find', array('table' => 'customer_address', 'id' => $CustomerAddress->getId())),
+            array(),
+            array(),
+            array(
+                'HTTP_AUTHORIZATION' => 'Bearer '.$access_token,
+                'CONTENT_TYPE' => 'application/json',
+            )
+        );
+
+        $this->expected = 401;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+
+        $ResponseBody = json_decode($this->client->getResponse()->getContent(), true);
+
+        $this->expected = 'invalid_token';
+        $this->actual = $ResponseBody['error'];
+        $this->verify();
+
+        $this->expected = 'The access token provided is invalid';
+        $this->actual = $ResponseBody['error_description'];
+        $this->verify();
     }
 }

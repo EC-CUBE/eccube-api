@@ -29,13 +29,16 @@ class AccessTokenRepository extends EntityRepository implements AccessTokenInter
         $AccessToken = $this->findOneBy(array('token' => $oauthToken));
         if (is_object($AccessToken)) {
             $token = $AccessToken->toArray();
-            $token['client_id'] = $AccessToken->getClient()->getId();
-            $UserInfo = $AccessToken->getUser();
-            if ($UserInfo) {
-                $token['user_id'] = $UserInfo->getSub();
+            $Client = $AccessToken->getClient();
+            if ($Client->hasMember() || $Client->hasCustomer()) {
+                $token['client_id'] = $Client->getId();
+                $UserInfo = $AccessToken->getUser();
+                if ($UserInfo) {
+                    $token['user_id'] = $UserInfo->getSub();
+                }
+                $token['expires'] = $token['expires']->getTimestamp();
+                return $token;
             }
-            $token['expires'] = $token['expires']->getTimestamp();
-            return $token;
         }
         return null;
     }

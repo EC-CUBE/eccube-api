@@ -2,6 +2,7 @@
 
 namespace Plugin\EccubeApi\Entity\OAuth2;
 
+use Eccube\Common\Constant;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -298,7 +299,7 @@ class Client extends \Eccube\Entity\AbstractEntity
      */
     public function hasMember()
     {
-        if (is_object($this->getMember())) {
+        if (is_object($this->getMember()) && $this->getMember()->getDelFlg() == Constant::DISABLED) {
             return true;
         }
         return false;
@@ -311,7 +312,7 @@ class Client extends \Eccube\Entity\AbstractEntity
      */
     public function hasCustomer()
     {
-        if (is_object($this->getCustomer())) {
+        if (is_object($this->getCustomer()) && $this->getCustomer()->getDelFlg() == Constant::DISABLED) {
             return true;
         }
         return false;

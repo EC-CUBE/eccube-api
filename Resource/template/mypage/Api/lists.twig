@@ -24,6 +24,7 @@
                                 <a href="{{ url('mypage_api_client_edit', { client_id : Client.id }) }}">
                                     <button class="btn btn-default btn-sm">変更</button>
                                 </a>
+                                <a href="{{ url('mypage_api_client_delete', { 'client_id' : Client.id }) }}" {{ csrf_token_for_anchor() }} data-method="delete">削除</a>
                             </p>
                         </div><!--/addr_box-->
                     </div>

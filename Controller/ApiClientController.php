@@ -3,6 +3,7 @@
 namespace Plugin\EccubeApi\Controller;
 
 use Eccube\Application;
+use Eccube\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use OAuth2\HttpFoundationBridge\Response as BridgeResponse;
 use OAuth2\Encryption\FirebaseJwt as Jwt;
@@ -14,7 +15,7 @@ use OAuth2\Encryption\FirebaseJwt as Jwt;
  *
  * @author Kentaro Ohkouchi
  */
-class ApiClientController
+class ApiClientController extends AbstractController
 {
 
     /** デフォルトの暗号化方式. */
@@ -315,9 +316,44 @@ class ApiClientController
             'Client' => $Client,
         ));
     }
+
     public function delete(Application $app, Request $request, $member_id = null, $client_id = null)
     {
-        // TODO
-        return null;
+        $this->isTokenValid($app);
+
+        $Client = $app['eccube.repository.oauth2.client']->find($client_id);
+
+        $ClientScopes = $app['eccube.repository.oauth2.clientscope']->findBy(array('client_id' => $Client->getId()));
+        foreach ($ClientScopes as $ClientScope) {
+            $app['orm.em']->remove($ClientScope);
+            $app['orm.em']->flush($ClientScope);
+        }
+        $RefreshTokens = $app['eccube.repository.oauth2.refresh_token']->findBy(array('client_id' => $Client->getId()));
+        foreach ($RefreshTokens as $RefreshToken) {
+            $app['orm.em']->remove($RefreshToken);
+            $app['orm.em']->flush($RefreshToken);
+        }
+        $AuthorizationCodes = $app['eccube.repository.oauth2.authorization_code']->findBy(array('client_id' => $Client->getId()));
+        foreach ($AuthorizationCodes as $AuthorizationCode) {
+            $app['orm.em']->remove($AuthorizationCode);
+            $app['orm.em']->flush($AuthorizationCode);
+        }
+        $AccessTokens = $app['eccube.repository.oauth2.access_token']->findBy(array('client_id' => $Client->getId()));
+        foreach ($AccessTokens as $AccessToken) {
+            $app['orm.em']->remove($AccessToken);
+            $app['orm.em']->flush($AccessToken);
+        }
+        $app['orm.em']->remove($Client);
+        $app['orm.em']->flush($Client);
+
+        if ($app->user() instanceof \Eccube\Entity\Member) {
+            $route = 'admin_api_lists';
+        } else {
+            $route = 'mypage_api_lists';
+        }
+
+        return $app->redirect(
+            $app->url($route, array('member_id' => $member_id))
+        );
     }
 }
