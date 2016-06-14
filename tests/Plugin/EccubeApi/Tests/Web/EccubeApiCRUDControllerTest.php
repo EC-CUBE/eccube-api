@@ -716,6 +716,12 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
                 default:
             }
 
+            // 自分自身を削除しないよう除外
+            switch ($table_name) {
+                case 'member':
+                    continue 2;
+            }
+
             $Entity = $this->app['orm.em']->getRepository($className)->findOneBy(array());
 
             // XXX 複合キーの対応
