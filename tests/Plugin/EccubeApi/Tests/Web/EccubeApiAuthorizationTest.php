@@ -274,18 +274,22 @@ class EccubeApiAuthorizationTest extends AbstractEccubeApiWebTestCase
 
         $authorization_code = $matched[1];
 
-        // Token リクエスト
+        // Token リクエスト(Basic認証を使用)
         $crawler = $client->request(
             'POST',
             $this->app->path('oauth2_server_token'),
             array(
                 'grant_type' => 'authorization_code',
                 'code' => $authorization_code,
-                'client_id' => $this->MemberClient->getClientIdentifier(),
-                'client_secret' => $this->MemberClient->getClientSecret(),
+                // 'client_id' => $this->MemberClient->getClientIdentifier(),
+                // 'client_secret' => $this->MemberClient->getClientSecret(),
                 'state' => $this->state,
                 'nonce' => $this->nonce,
                 'redirect_uri' => $this->MemberClient->getRedirectUri()
+            ),
+            array(),
+            array(
+                'HTTP_AUTHORIZATION' => 'Basic '.base64_encode($this->MemberClient->getClientIdentifier().':'.$this->MemberClient->getClientSecret()),
             )
         );
 
