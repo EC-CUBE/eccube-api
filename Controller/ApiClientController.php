@@ -95,7 +95,7 @@ class ApiClientController extends AbstractController
         $UserInfo = $app['eccube.repository.oauth2.openid.userinfo']->findOneBy($userInfoConditions);
         $PublicKey = $app['eccube.repository.oauth2.openid.public_key']->findOneBy(array('UserInfo' => $UserInfo));
 
-        $builder = $app['form.factory']->createBuilder('admin_api_client', $Client);
+        $builder = $app['form.factory']->createBuilder('api_client', $Client);
         $builder->remove('Scopes');
         $ListScopes = $app['eccube.repository.oauth2.scope']->findBy(array('is_default' => true, $scope_key => 1));
         $builder->add('Scopes', 'entity', array(
@@ -191,7 +191,7 @@ class ApiClientController extends AbstractController
         }
         $Client = new \Plugin\EccubeApi\Entity\OAuth2\Client();
 
-        $builder = $app['form.factory']->createBuilder('admin_api_client', $Client);
+        $builder = $app['form.factory']->createBuilder('api_client', $Client);
         $builder->remove('Scopes');
         $Scopes = $app['eccube.repository.oauth2.scope']->findBy(array('is_default' => true, $scope_key => 1));
         $builder->add('Scopes', 'entity', array(
@@ -289,10 +289,12 @@ class ApiClientController extends AbstractController
             }
 
             $app['orm.em']->flush();
-            $app->addSuccess('admin.register.complete', 'admin');
+
             if ($is_admin) {
+                $app->addSuccess('admin.register.complete', 'admin');
                 $route = 'admin_setting_system_client_edit';
             } else {
+                $app->addSuccess('admin.register.complete', 'front');
                 $route = 'mypage_api_client_edit';
             }
             return $app->redirect(

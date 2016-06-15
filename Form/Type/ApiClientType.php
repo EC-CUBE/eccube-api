@@ -131,6 +131,6 @@ class ApiClientType extends AbstractType
      */
     public function getName()
     {
-        return 'admin_api_client';
+        return 'api_client';
     }
 }
