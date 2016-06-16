@@ -9,7 +9,12 @@ info:
     使い方などはこちらをご覧ください。[here](https://ec-cube.github.io/api)
 # ドメイン名を入力
 host: <your-host-name>
-basePath: <base-path>/<base-endpoint>/<base-version>
+basePath: <base-path>/
+tags:
+  - name: CRUD
+    description: Create, Read, Update, Delete Operations.
+  - name: Authorization
+    description: OAuth2.0 and OpenID Connect Authorizations.
 schemes:
   - http
   - https
@@ -476,8 +481,10 @@ security:
     - product_tag_write
 # Describe your paths here
 paths:
-  /product:
+  /<base-endpoint>/<base-version>/product:
     get:
+      tags:
+        - CRUD
       description: dtb_product の一覧を取得します。
       parameters:
       responses:
@@ -507,6 +514,8 @@ paths:
       #   - eccubeOpenIDConnectAuthorizationCode:
       #       - product_read
     post:
+      tags:
+        - CRUD
       description: dtb_product を生成します。
       parameters:
         -
@@ -574,8 +583,10 @@ paths:
       #       - product_write
       #   - eccubeOpenIDConnectAuthorizationCode:
       #       - product_write
-  /product/{id}:
+  /<base-endpoint>/<base-version>/product/{id}:
     get:
+      tags:
+        - CRUD
       description: dtb_product をID指定で取得します。
       parameters:
         -
@@ -597,6 +608,8 @@ paths:
           schema:
             $ref: '#/definitions/errors'
     put:
+      tags:
+        - CRUD
       description: dtb_product を更新します。
       parameters:
         -
@@ -671,6 +684,8 @@ paths:
       #   - eccubeOpenIDConnectAuthorizationCode:
       #       - product_write
     delete:
+      tags:
+        - CRUD
       description: dtb_product をID指定で論理削除します。
       parameters:
         -
@@ -689,7 +704,96 @@ paths:
           description: unexpected error
           schema:
             $ref: '#/definitions/errors'
-
+  /OAuth2/<base-version>/userinfo:
+    get:
+      tags:
+        - Authorization
+      description: OpenID Connect UserInfo エンドポイント. エンドユーザーの個人情報を提供します.
+      parameters:
+      responses:
+        200:
+          description: Successful response
+          schema:
+            $ref: '#/definitions/userinfo'
+  /<admin_dir>/OAuth2/<base-version>/authorize:
+    get:
+      tags:
+        - Authorization
+      description: Member 用 Authorization エンドポイント
+      parameters:
+        - name: client_id
+          in: query
+          description: client_id
+          type: string
+          required: true
+        - name: redirect_uri
+          in: query
+          description: リダイレクトURI
+          type: string
+          format: url
+          required: true
+        - name: response_type
+          in: query
+          description: レスポンスタイプ
+          type: string
+          example: code
+          required: true
+        - name: state
+          in: query
+          description: CSRFチェック用 state パラメータ
+          type: string
+          required: true
+        - name: scope
+          in: query
+          type: string
+          description: 認可要求するスコープ文字列。複数の場合はスペース区切りで記述する。
+          example: openid%20offline_access%20product_read
+        - name: nonce
+          in: query
+          type: string
+          description: リプレイアタックチェック用 nonce パラメータ
+      responses:
+        200:
+          description: 認可要求画面を表示する
+    post:
+      tags:
+        - Authorization
+      description: Member 用 Authorization エンドポイント
+      parameters:
+        - name: client_id
+          in: formData
+          description: client_id
+          type: string
+          required: true
+        - name: redirect_uri
+          in: formData
+          description: リダイレクトURI
+          type: string
+          format: url
+          required: true
+        - name: response_type
+          in: formData
+          description: レスポンスタイプ
+          type: string
+          example: code
+          required: true
+        - name: state
+          in: formData
+          description: CSRFチェック用 state パラメータ
+          type: string
+          required: true
+        - name: scope
+          in: formData
+          type: string
+          description: 認可要求するスコープ文字列。複数の場合はスペース区切りで記述する。
+          example: openid%20offline_access%20product_read
+        - name: nonce
+          in: query
+          type: string
+          description: リプレイアタックチェック用 nonce パラメータ
+      responses:
+        200:
+          description: 認可要求画面を表示する
 ##################################################################################
 ##################################################################################
 ##################################################################################
@@ -1376,3 +1480,91 @@ definitions:
             id:
               type: integer
               format: int32
+  userinfo:
+    type: object
+    required:
+      - sub
+    properties:
+      sub:
+        type: string
+        description: Subject - Issuer における End-User の識別子。開鍵の指紋を設定する. Self-Issued ID Token Validation に準拠した形式。
+        example: 9BrQlfDWfCu-gzrPiRtoafR5Yfw_koTePaXs4dfu-l4
+      name:
+        type: string
+        example: 山田 太郎
+      family_name:
+        type: string
+        example: 山田
+      given_name:
+        type: string
+        example: 太郎
+      middle_name:
+        type: string
+      nickname:
+        type: string
+      preferred_username:
+        type: string
+        example: user@example.com
+        description: 識別名。 ログインユーザーID が設定される
+      profile:
+        type: string
+      picture:
+        type: string
+      website:
+        type: string
+        format: url
+      gender:
+        type: string
+        example: 男性
+      birthdate:
+        type: string
+        format: date
+        example: 1980-01-01
+      zoneinfo:
+        type: string
+      locale:
+        type: string
+      updated_at:
+        type: string
+        format: date-time
+        example: 2016-06-16T00:00:00Z
+      email:
+        type: string
+        format: email
+        example: user@example.com
+      email_verified:
+        type: boolean
+        example: false
+      address:
+        type: object
+        schema:
+          $ref: '#/definitions/address'
+      phone_number:
+        type: string
+        example: 000-000-000
+      phone_number_verified:
+        type: boolean
+        example: false
+  address:
+    type: object
+    properties:
+      formatted:
+        type: string
+        example: |
+          530-0001
+          大阪府大阪市梅田2丁目0-0
+      street_address:
+        type: string
+        example: 梅田2丁目0-0
+      locality:
+        type: string
+        example: 大阪市
+      region:
+        type: string
+        example: 大阪府
+      postal_code:
+        type: string
+        example: 530-0001
+      country:
+        type: string
+        example: 日本
