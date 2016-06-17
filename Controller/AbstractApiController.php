@@ -33,8 +33,16 @@ abstract class AbstractApiController
      */
     protected function verifyRequest(Application $app, Request $request, $scope_required = null)
     {
+        $BridgeRequest = BridgeRequest::createFromRequest($request);
+        // XXX https://github.com/EC-CUBE/eccube-api/issues/41
+        if (!$BridgeRequest->headers->has('Authorization') && function_exists('apache_request_headers')) {
+            $all = apache_request_headers();
+            if (isset($all['Authorization'])) {
+                $BridgeRequest->headers->set('Authorization', $all['Authorization']);
+            }
+        }
         return $app['oauth2.server.resource']->verifyResourceRequest(
-            BridgeRequest::createFromRequest($request),
+            $BridgeRequest,
             new BridgeResponse(),
             $scope_required
         );
