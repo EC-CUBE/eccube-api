@@ -754,7 +754,7 @@ paths:
           description: リプレイアタックチェック用 nonce パラメータ
       responses:
         200:
-          description: 認可要求画面を表示する
+          description: 認可要求画面を表示する。認可要求が完了した場合、 redirect_uri に response_type で指定したパラメータを付与し、リダイレクトする。
     post:
       tags:
         - Authorization
@@ -793,7 +793,196 @@ paths:
           description: リプレイアタックチェック用 nonce パラメータ
       responses:
         200:
-          description: 認可要求画面を表示する
+          description: 認可要求画面を表示する。認可要求が完了した場合、 redirect_uri に response_type で指定したパラメータを付与し、リダイレクトする。
+  /mypage/OAuth2/<base-version>/authorize:
+    get:
+      tags:
+        - Authorization
+      description: Customer 用 Authorization エンドポイント
+      parameters:
+        - name: client_id
+          in: query
+          description: client_id
+          type: string
+          required: true
+        - name: redirect_uri
+          in: query
+          description: リダイレクトURI
+          type: string
+          format: url
+          required: true
+        - name: response_type
+          in: query
+          description: レスポンスタイプ
+          type: string
+          example: code
+          required: true
+        - name: state
+          in: query
+          description: CSRFチェック用 state パラメータ
+          type: string
+          required: true
+        - name: scope
+          in: query
+          type: string
+          description: 認可要求するスコープ文字列。複数の場合はスペース区切りで記述する。
+          example: openid%20offline_access%20product_read
+        - name: nonce
+          in: query
+          type: string
+          description: リプレイアタックチェック用 nonce パラメータ
+      responses:
+        200:
+          description: 認可要求画面を表示する。認可要求が完了した場合、 redirect_uri に response_type で指定したパラメータを付与し、リダイレクトする。
+    post:
+      tags:
+        - Authorization
+      description: Customer 用 Authorization エンドポイント
+      parameters:
+        - name: client_id
+          in: formData
+          description: client_id
+          type: string
+          required: true
+        - name: redirect_uri
+          in: formData
+          description: リダイレクトURI
+          type: string
+          format: url
+          required: true
+        - name: response_type
+          in: formData
+          description: レスポンスタイプ
+          type: string
+          example: code
+          required: true
+        - name: state
+          in: formData
+          description: CSRFチェック用 state パラメータ
+          type: string
+          required: true
+        - name: scope
+          in: formData
+          type: string
+          description: 認可要求するスコープ文字列。複数の場合はスペース区切りで記述する。
+          example: openid%20offline_access%20product_read
+        - name: nonce
+          in: query
+          type: string
+          description: リプレイアタックチェック用 nonce パラメータ
+      responses:
+        200:
+          description: 認可要求画面を表示する。認可要求が完了した場合、 redirect_uri に response_type で指定したパラメータを付与し、リダイレクトする。
+  /OAuth2/<base-version>/token:
+    post:
+      tags:
+        - Authorization
+      description: Token エンドポイント。アクセストークン及び、リフレッシュトークン、 id_token を取得する。
+      parameters:
+        - name: Authorization
+          in: header
+          type: string
+          description: Basic 認証スキームを使用し、 client_id:client_secret を Base64 エンコーディングした文字列を送信する
+          example: Basic czZCaGRSa3F0MzpnWDFmQmF0M2JW
+          required: true
+        - name: grant_type
+          in: formData
+          type: string
+          description: 認可形式
+          example: authorization_code
+          required: true
+        - name: code
+          in: formData
+          type: string
+          description: Authorization code の文字列
+          example: 88187509bc2d240bfa971c608e7884e39b8a5660
+        - name: redirect_uri
+          in: formData
+          type: string
+          description: リダイレクトURI
+        - name: refresh_token
+          in: formData
+          type: string
+          description: リフレッシュトークン
+      responses:
+        200:
+          description: トークンレスポンスを返却する。以下はその一例。
+          schema:
+            type: object
+            properties:
+              access_token:
+                type: string
+                example: e40f3cb306c937ef80565638ae0fad816840a4ec
+                description: アクセスークン
+              token_type:
+                type: string
+                example: Bearer
+                description: 認証スキーム
+              refresh_token:
+                type: string
+                example: ccaf1161ed5d13860396816923dd66c1a4d1b32a
+                description: リフレッシュトークン。有効期限切れ
+              expires_in:
+                type: integer
+                example: 3600
+                description: アクセストークンの有効期限
+              scope:
+                type: string
+                example: openid offline_access
+                description: 認可されたスコープ
+              id_token:
+                type: string
+                example: eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJodHRwOlwvXC8xOTIuMTY4LjU2LjEwMTo4MDgxIiwic3ViIjoiNG53c25ic3pJSDRYdVFuWHdpZ3RQOEhhS1FwamVHeDQ5OXMwQTlJMXFrbyIsImF1ZCI6IjJlODE1MzAyM2Q2YWZiMmZiMjk5MzFkYmY5YTI3NWVkNDcxNWYzODQiLCJpYXQiOjE0NjA1MzU1MjMsImV4cCI6MTQ2MDUzOTEyMywiYXV0aF90aW1lIjoxNDYwNTM1NTIzLCJub25jZSI6InJhbmRvbV9ub25jZSJ9.D3RE1i-Oc_bCANI28BwqT-6voLk645kqGZCs3PCOfDRATUX6_hvyBOc3PvfrH6BCaNfYX8m8sGQPD2g-GRUJ-j6OMCHp1KHcycsN5OS6QoZOucvM_gDKITivwW0q3BvLYsc-zK00DRlYuAhSW1pCqdWGRGk-3LWbqfasttYvx34KoSazfCsIyMqxC_zQ4qDoYaReeuCjiMX1xW3vXueEidMQ9_5s7SQgJwtwMnqOdDoEHUQce65wWa2yNXBHaohrGwXmg9Sbd5pD_Anhrh7WIAnYEbDoHc1rb40oUT-kye5cplYUTd4F9y88PnyXeWN3-vGRVxsvMRdJQmiTqzwVvA
+                description: id_token の文字列
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/errors'
+  /OAuth2/<base-version>/tokeninfo:
+    get:
+      tags:
+        - Authorization
+      description: Tokeninfo エンドポイント。id_token の詳細情報を返却します。
+      parameters:
+        - name: id_token
+          in: query
+          type: string
+          description: id_token の文字列
+          example: eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJodHRwOlwvXC8xOTIuMTY4LjU2LjEwMTo4MDgxIiwic3ViIjoiNG53c25ic3pJSDRYdVFuWHdpZ3RQOEhhS1FwamVHeDQ5OXMwQTlJMXFrbyIsImF1ZCI6IjJlODE1MzAyM2Q2YWZiMmZiMjk5MzFkYmY5YTI3NWVkNDcxNWYzODQiLCJpYXQiOjE0NjA1MzU1MjMsImV4cCI6MTQ2MDUzOTEyMywiYXV0aF90aW1lIjoxNDYwNTM1NTIzLCJub25jZSI6InJhbmRvbV9ub25jZSJ9.D3RE1i-Oc_bCANI28BwqT-6voLk645kqGZCs3PCOfDRATUX6_hvyBOc3PvfrH6BCaNfYX8m8sGQPD2g-GRUJ-j6OMCHp1KHcycsN5OS6QoZOucvM_gDKITivwW0q3BvLYsc-zK00DRlYuAhSW1pCqdWGRGk-3LWbqfasttYvx34KoSazfCsIyMqxC_zQ4qDoYaReeuCjiMX1xW3vXueEidMQ9_5s7SQgJwtwMnqOdDoEHUQce65wWa2yNXBHaohrGwXmg9Sbd5pD_Anhrh7WIAnYEbDoHc1rb40oUT-kye5cplYUTd4F9y88PnyXeWN3-vGRVxsvMRdJQmiTqzwVvA
+          required: true
+      responses:
+        200:
+          description: ID トークンの詳細情報を返却します。
+          schema:
+            type: object
+            properties:
+              iss:
+                type: string
+                example: https://example.com
+                description: issuer - ID トークンの発行元
+              sub:
+                type: string
+                example: 4nwsnbszIH4XuQnXwigtP8HaKQpjeGx499s0A9I1qko
+                description: subject - ユーザー識別子。 id_token の公開鍵から生成される。
+              aud:
+                type: string
+                example: 2e8153023d6afb2fb29931dbf9a275ed4715f384
+                description: ID トークンの想定されるオーディエンス。 OAuth2.0 Client ID が使用される。
+              iat:
+                type: string
+                example: 1460535523
+                description: ID トークン発行時刻の UNIX タイムスタンプ。
+              exp:
+                type: string
+                example: 1460539123
+                description: ID トークン有効期限の UNIX タイムスタンプ。
+              auth_time:
+                type: string
+                example: 1460535523
+                description: 認証の発生時刻の UNIX タイムスタンプ。
+              nonce:
+                type: string
+                description: クライアントセッションの識別子。リプレイスアタック防止のために使用する。
 ##################################################################################
 ##################################################################################
 ##################################################################################
