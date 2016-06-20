@@ -37,8 +37,11 @@ abstract class AbstractApiController
         // XXX https://github.com/EC-CUBE/eccube-api/issues/41
         if (!$BridgeRequest->headers->has('Authorization') && function_exists('apache_request_headers')) {
             $all = apache_request_headers();
-            if (isset($all['Authorization'])) {
+            if (array_key_exists('Authorization', $all) && isset($all['Authorization'])) {
                 $BridgeRequest->headers->set('Authorization', $all['Authorization']);
+            } elseif (array_key_exists('authorization', $all) && isset($all['authorization'])) {
+                // ubuntu + Apache 2.4.x の環境で、キーが小文字になっている場合がある
+                $BridgeRequest->headers->set('Authorization', $all['authorization']);
             }
         }
         return $app['oauth2.server.resource']->verifyResourceRequest(
