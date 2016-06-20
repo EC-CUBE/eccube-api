@@ -56,24 +56,38 @@ class EccubeApiCRUDController extends AbstractApiController
 
         $AccessToken = $this->getAccessToken($app, $request);
         $searchConditions = array();
-        // Customer で認証されている場合
-        if (is_array($AccessToken) && $AccessToken['client']->hasCustomer()) {
-            switch ($table) {
-                case 'customer':
-                     $searchConditions['id'] = $AccessToken['client']->getCustomer()->getId();
-                    break;
+        $excludeAttribute = array('__initializer__', '__cloner__', '__isInitialized__');
+        $excludes = array();
+        if (is_array($AccessToken) && is_object($AccessToken['client'])) {
+            // Customer で認証されている場合
+            if ($AccessToken['client']->hasCustomer()) {
+                switch ($table) {
+                    case 'customer':
+                        $searchConditions['id'] = $AccessToken['client']->getCustomer()->getId();
+                        break;
 
-                case 'customer_address':
-                case 'order':
-                case 'order_detail':
-                    $searchConditions['Customer'] = $AccessToken['client']->getCustomer();
+                    case 'customer_address':
+                    case 'order':
+                    case 'order_detail':
+                        $searchConditions['Customer'] = $AccessToken['client']->getCustomer();
+                        break;
+                }
+                $excludes = $this->attribureExclusion($table, true);
+            }
+        } else {
+            // public access
+            switch ($table) {
+                case 'product':
+                    $searchConditions['Status'] = $app['eccube.repository.master.disp']->find(\Eccube\Entity\Master\Disp::DISPLAY_SHOW);
                     break;
             }
+            $excludes = $this->attribureExclusion($table);
         }
+        $excludeAttribute = array_merge($excludeAttribute, $excludes);
 
         // TODO LIMIT, OFFSET が必要
         foreach ($Repository->findBy($searchConditions) as $Entity) {
-            $Results[] = EntityUtil::entityToArray($app, $Entity);
+            $Results[] = EntityUtil::entityToArray($app, $Entity, $excludeAttribute);
         }
 
         return $this->getWrapperedResponseBy($app, array($table => $Results));
@@ -100,12 +114,17 @@ class EccubeApiCRUDController extends AbstractApiController
         if ($response !== true) {
             return $response;
         }
-
+        $AccessToken = $this->getAccessToken($app, $request);
         $Result = $this->getWrapperedErrorResponseBy($app);
         try {
             $Result = $this->findEntity($app, $request,
-                                    function ($id, $className) use ($app, $table) {
-                                        $Entity = $app['orm.em']->getRepository($className)->find($id);
+                                        function ($id, $className) use ($app, $table, $AccessToken) {
+                                        $searchConditions = array('id' => $id);
+                                        // public access
+                                        if (empty($AccessToken) && $table == 'product') {
+                                            $searchConditions['Status'] = $app['eccube.repository.master.disp']->find(\Eccube\Entity\Master\Disp::DISPLAY_SHOW);
+                                        }
+                                        $Entity = $app['orm.em']->getRepository($className)->findOneBy($searchConditions);
                                         if (!is_object($Entity)) {
                                             throw new NotFoundHttpException();
                                         }
@@ -122,25 +141,6 @@ class EccubeApiCRUDController extends AbstractApiController
         // Bearer トークンが存在しない場合はレスポンスを返す
         if (!$this->hasBearerTokenHeader($request)) {
             return $Result;
-        }
-        // Customer で認証されている場合は結果をチェック
-        $AccessToken = $this->getAccessToken($app, $request);
-        if (is_array($AccessToken) && $AccessToken['client']->hasCustomer()) {
-            switch ($table) {
-                case 'customer':
-                    if ($id != $AccessToken['client']->getCustomer()->getId()) {
-                        return $this->getWrapperedErrorResponseBy($app, 'Access Forbidden', 403);
-                    }
-                    break;
-
-                case 'customer_address':
-                case 'order':
-                case 'order_detail':
-                    if ($Result[$table]['Customer']['id'] != $AccessToken['client']->getCustomer()->getId()) {
-                        return $this->getWrapperedErrorResponseBy($app, 'Access Forbidden', 403);
-                    }
-                    break;
-            }
         }
 
         return $Result;
@@ -262,7 +262,34 @@ class EccubeApiCRUDController extends AbstractApiController
 
         $Results = call_user_func_array($callback, $params_arr);
 
-        return $this->getWrapperedResponseBy($app, array($table => EntityUtil::entityToArray($app, $Results)));
+        $AccessToken = $this->getAccessToken($app, $request);
+        $excludeAttribute = array('__initializer__', '__cloner__', '__isInitialized__');
+        $excludes = array();
+        if (is_array($AccessToken) && is_object($AccessToken['client'])) {
+            // Customer で認証されている場合
+            if ($AccessToken['client']->hasCustomer()) {
+                $id = $params_arr[0];
+                switch ($table) {
+                    case 'customer':
+                        if ($id != $AccessToken['client']->getCustomer()->getId()) {
+                            return $this->getWrapperedErrorResponseBy($app, 'Access Forbidden', 403);
+                        }
+                        break;
+                    case 'customer_address':
+                    case 'order':
+                    case 'order_detail':
+                        if (is_array($Results) && $Results[$table]['Customer']['id'] != $AccessToken['client']->getCustomer()->getId()) {
+                            return $this->getWrapperedErrorResponseBy($app, 'Access Forbidden', 403);
+                        }
+                        break;
+                }
+                $excludes= $this->attribureExclusion($table, true);
+            }
+        } else {
+            $excludes = $this->attribureExclusion($table);
+        }
+        $excludeAttribute = array_merge($excludeAttribute, $excludes);
+        return $this->getWrapperedResponseBy($app, array($table => EntityUtil::entityToArray($app, $Results, $excludeAttribute)));
     }
 
     /**
@@ -510,25 +537,51 @@ class EccubeApiCRUDController extends AbstractApiController
         if (!is_object($Entity)) {
             return $this->getWrapperedErrorResponseBy($app);
         }
-        EntityUtil::copyRelatePropertiesFromArray($app, $Entity, $request->request->all());
 
-        // Customer で認証されている場合
         $AccessToken = $this->getAccessToken($app, $request);
+        $excludeAttribute = array('__initializer__', '__cloner__', '__isInitialized__');
+        $excludes = array();
+        // Customer で認証されている場合
         if (is_array($AccessToken) && $AccessToken['client']->hasCustomer()) {
             switch ($table) {
                 case 'customer':
                     if ($Entity->getId() != $AccessToken['client']->getCustomer()->getId()) {
                         return $this->getWrapperedErrorResponseBy($app, 'Access Forbidden', 403);
                     }
+                    $excludes = array(
+                        'Country',
+                        'CustomerFavoriteProducts',
+                        'CustomerAddresses',
+                        'password',
+                        'salt',
+                        'secret_key',
+                        'first_buy_date',
+                        'last_buy_date',
+                        'buy_times',
+                        'buy_total',
+                        'note',
+                        'status',
+                        'create_date',
+                        'update_date',
+                        'del_flg'
+                    );
                     break;
                 case 'customer_address':
                     if ($Entity->getCustomer()->getId() != $AccessToken['client']->getCustomer()->getId()) {
                         return $this->getWrapperedErrorResponseBy($app, 'Access Forbidden', 403);
                     }
+                    $excludes = array(
+                        'Country',
+                        'customer_id',
+                        'create_date',
+                        'update_date',
+                        'del_flg'
+                    );
                     break;
             }
         }
-
+        $excludeAttribute = array_merge($excludeAttribute, $excludes);
+        EntityUtil::copyRelatePropertiesFromArray($app, $Entity, $request->request->all(), $excludeAttribute);
         try {
             $app['orm.em']->flush($Entity);
             return $this->getWrapperedResponseBy($app, null, 204);
@@ -615,9 +668,11 @@ class EccubeApiCRUDController extends AbstractApiController
             case 'product_image':
             case 'product_tag':
             case 'product_category':
+            case 'category':
             case 'job':
             case 'pref':
             case 'sex':
+            case 'tag':
                 return false;
             default:
                 return true;
@@ -690,5 +745,145 @@ class EccubeApiCRUDController extends AbstractApiController
             $app['oauth2.server.resource']->getResponse()
         );
         return $AccessToken;
+    }
+
+    /**
+     * 除外するフィールドを返す.
+     *
+     * @param string $table テーブル名
+     * @param boolean $is_authorized_customer Customer で認証されているかどうか.
+     * @return array 除外するフィールド名の配列
+     */
+    protected function attribureExclusion($table, $is_authorized_customer = false)
+    {
+        // public access
+        switch ($table) {
+            case 'news':
+                $excludes = array(
+                    'rank',
+                    'select',
+                    'link_method',
+                    'create_date',
+                    'update_date',
+                    'del_flg',
+                    'Creator',
+                );
+                break;
+
+            case 'product':
+                $excludes = array(
+                    'note',
+                    'search_word',
+                    'create_date',
+                    'update_date',
+                    'del_flg',
+                    'Creator',
+                    'creator_id',
+                    'CustomerFavoriteProduct',
+                    'Status'
+                );
+                break;
+
+            case 'product_category':
+                $excludes = array(
+                    'level',
+                    'rank',
+                    'create_date',
+                    'update_date',
+                    'del_flg',
+                    'CategoryCount',
+                    'CategoryTotalCount',
+                    'Children',
+                    'Parent',
+                    'Creator'
+                );
+                break;
+
+            case 'product_class':
+                $excludes = array(
+                    'stock',
+                    'stock_unlimited',
+                    'sale_limit',
+                    'price01',
+                    'delivery_fee',
+                    'create_date',
+                    'update_date',
+                    'del_flg',
+                    'ProductType',
+                    'ClassCategory1',
+                    'ClassCategory2',
+                    'DeliveryDate',
+                    'Creator',
+                );
+                break;
+
+            case 'product_image':
+                $excludes = array(
+                    'rank',
+                    'create_date',
+                    'Creator'
+                );
+                break;
+
+            case 'product_tag':
+                $excludes = array(
+                    'create_date',
+                    'Creator'
+                );
+                break;
+        }
+        if ($is_authorized_customer) {
+            switch ($table) {
+                case 'customer':
+                    $excludes = array(
+                        'Country',
+                        'CustomerFavoriteProducts',
+                        'password',
+                        'salt',
+                        'secret_key',
+                        'first_buy_date',
+                        'last_buy_date',
+                        'buy_times',
+                        'buy_total',
+                        'note',
+                        'status',
+                        'create_date',
+                        'update_date',
+                        'del_flg',
+                    );
+                    break;
+
+                case 'customer_address':
+                    $excludes = array(
+                        'Country',
+                        'create_date',
+                        'update_date',
+                        'del_flg',
+                    );
+                    break;
+
+                case 'order':
+                    $excludes = array(
+                        'note',
+                        'status',
+                        'create_date',
+                        'update_date',
+                        'order_date',
+                        'commit_date',
+                        'payment_date',
+                        'device_type_id',
+                        'del_flg',
+                        'pre_order_id',
+                    );
+                    break;
+
+                case 'order_detail':
+                    $excludes = array(
+                        'tax_rule'
+                    );
+                    break;
+            }
+        }
+        return $excludes;
     }
 }
