@@ -41,7 +41,7 @@ class OAuth2Controller extends AbstractApiController
         $nonce = $request->get('nonce');
         $is_authorized = (boolean)$request->get('authorized');
 
-        $BridgeRequest = BridgeRequest::createFromRequest($request);
+        $BridgeRequest = $this->createFromRequestWrapper($request);
         $Response = new BridgeResponse();
         $form = $app['form.factory']->createNamed(
             '',                 // 無名のフォームを生成
@@ -177,7 +177,7 @@ class OAuth2Controller extends AbstractApiController
      */
     public function token(Application $app, Request $request)
     {
-        return $app['oauth2.server.token']->handleTokenRequest(BridgeRequest::createFromRequest($request), new BridgeResponse());
+        return $app['oauth2.server.token']->handleTokenRequest($this->createFromRequestWrapper($request), new BridgeResponse());
     }
 
     /**
@@ -226,6 +226,6 @@ class OAuth2Controller extends AbstractApiController
      */
     public function userInfo(Application $app, Request $request)
     {
-        return $app['oauth2.server.resource']->handleUserInfoRequest(BridgeRequest::createFromRequest($request), new BridgeResponse());
+        return $app['oauth2.server.resource']->handleUserInfoRequest($this->createFromRequestWrapper($request), new BridgeResponse());
     }
 }
