@@ -33,19 +33,8 @@ abstract class AbstractApiController
      */
     protected function verifyRequest(Application $app, Request $request, $scope_required = null)
     {
-        $BridgeRequest = BridgeRequest::createFromRequest($request);
-        // XXX https://github.com/EC-CUBE/eccube-api/issues/41
-        if (!$BridgeRequest->headers->has('Authorization') && function_exists('apache_request_headers')) {
-            $all = apache_request_headers();
-            if (array_key_exists('Authorization', $all) && isset($all['Authorization'])) {
-                $BridgeRequest->headers->set('Authorization', $all['Authorization']);
-            } elseif (array_key_exists('authorization', $all) && isset($all['authorization'])) {
-                // ubuntu + Apache 2.4.x の環境で、キーが小文字になっている場合がある
-                $BridgeRequest->headers->set('Authorization', $all['authorization']);
-            }
-        }
         return $app['oauth2.server.resource']->verifyResourceRequest(
-            $BridgeRequest,
+            $this->createFromRequestWrapper($request),
             new BridgeResponse(),
             $scope_required
         );
@@ -123,5 +112,30 @@ abstract class AbstractApiController
     {
         $this->addErrors($app, $statusCode, $message);
         return $this->getWrapperedResponseBy($app, $this->getErrors(), $statusCode);
+    }
+
+    /**
+     * \OAuth2\HttpFoundationBridge\Request に Authorization ヘッダを付与します.
+     *
+     * Apache モジュール版の PHP で Authorization ヘッダが無視されてしまうのを回避するラッパーです.
+     *
+     * @see \OAuth2\HttpFoundationBridge\Request::createFromRequest()
+     * @link https://github.com/EC-CUBE/eccube-api/issues/41
+     * @link https://github.com/bshaffer/oauth2-server-php/issues/433
+     */
+    protected function createFromRequestWrapper(Request $request)
+    {
+        $BridgeRequest = BridgeRequest::createFromRequest($request);
+        // XXX https://github.com/EC-CUBE/eccube-api/issues/41
+        if (!$BridgeRequest->headers->has('Authorization') && function_exists('apache_request_headers')) {
+            $all = apache_request_headers();
+            if (array_key_exists('Authorization', $all) && isset($all['Authorization'])) {
+                $BridgeRequest->headers->set('Authorization', $all['Authorization']);
+            } elseif (array_key_exists('authorization', $all) && isset($all['authorization'])) {
+                // ubuntu + Apache 2.4.x の環境で、キーが小文字になっている場合がある
+                $BridgeRequest->headers->set('Authorization', $all['authorization']);
+            }
+        }
+        return $BridgeRequest;
     }
 }

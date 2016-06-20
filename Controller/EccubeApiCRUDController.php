@@ -686,7 +686,7 @@ class EccubeApiCRUDController extends AbstractApiController
     protected function getAccessToken(Application $app, Request $request)
     {
         $AccessToken = $app['oauth2.server.resource']->getAccessTokenData(
-            BridgeRequest::createFromRequest($request),
+            $this->createFromRequestWrapper($request),
             $app['oauth2.server.resource']->getResponse()
         );
         return $AccessToken;
