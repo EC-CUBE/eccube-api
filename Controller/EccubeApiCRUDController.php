@@ -728,6 +728,7 @@ class EccubeApiCRUDController extends AbstractApiController
      */
     protected function hasBearerTokenHeader(Request $request)
     {
+        $request = $this->createFromRequestWrapper($request);
         return preg_match('/Bearer (\w+)/', $request->headers->get('authorization')) > 0;
     }
 
