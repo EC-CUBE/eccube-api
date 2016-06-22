@@ -64,14 +64,14 @@ class OAuth2Controller extends AbstractApiController
             // ログイン中のユーザーと、認可要求された client_id の妥当性をチェックする.
             // CSRFチェック, Client が使用可能な scope のチェック, ログイン中ユーザーの妥当性チェック
             $Client = $app['eccube.repository.oauth2.client']->findOneBy(array('client_identifier' => $client_id));
-            if ($form->isValid() && $app->user() instanceof \Eccube\Entity\Member && $Client->hasMember()) {
+            if ($form->isValid() && $app->user() instanceof \Eccube\Entity\Member && $Client->hasMember() && $app->isGranted('ROLE_ADMIN')) {
                 $Member = $Client->getMember();
                 if ($Member->getId() !== $app->user()->getId()) {
                     $is_authorized = false;
                 }
                 $UserInfo = $app['eccube.repository.oauth2.openid.userinfo']->findOneBy(array('Member' => $Member));
                 $is_admin = true;
-            } elseif ($form->isValid() && $app->user() instanceof \Eccube\Entity\Customer && $Client->hasCustomer()) {
+            } elseif ($form->isValid() && $app->user() instanceof \Eccube\Entity\Customer && $Client->hasCustomer() && $app->isGranted('ROLE_USER')) {
                 $Customer = $Client->getCustomer();
                 if ($Customer->getId() !== $app->user()->getId()) {
                     $is_authorized = false;
