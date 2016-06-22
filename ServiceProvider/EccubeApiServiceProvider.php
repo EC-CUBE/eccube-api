@@ -82,8 +82,49 @@ class EccubeApiServiceProvider implements ServiceProviderInterface
 
         // api
         $c = $app['controllers_factory'];
+
+        // product_category
+        $c->get('/product_category/product_id/{product_id}/category_id/{category_id}',
+                'Plugin\EccubeApi\Controller\EccubeApiCRUDController::findProductCategory')
+            ->bind('api_operation_find_product_category')
+            ->assert('product_id', '\d+')->assert('category_id', '\d+');
+        $c->post('/product_category', 'Plugin\EccubeApi\Controller\EccubeApiCRUDController::createProductCategory')
+            ->bind('api_operation_create_product_category');
+        $c->put('/product_category/product_id/{product_id}/category_id/{category_id}',
+                'Plugin\EccubeApi\Controller\EccubeApiCRUDController::updateProductCategory')
+            ->bind('api_operation_update_product_category')
+            ->assert('product_id', '\d+')->assert('category_id', '\d+');
+
+        // payment_option キーのみのテーブルなので get と post のみ
+        $c->get('/payment_option/delivery_id/{delivery_id}/payment_id/{payment_id}',
+                'Plugin\EccubeApi\Controller\EccubeApiCRUDController::findPaymentOption')
+            ->bind('api_operation_find_payment_option')
+            ->assert('delivery_id', '\d+')->assert('payment_id', '\d+');
+        $c->post('/payment_option', 'Plugin\EccubeApi\Controller\EccubeApiCRUDController::createPaymentOption')
+            ->bind('api_operation_create_payment_option');
+
+        // block_position
+        $c->get('/block_position/page_id/{page_id}/target_id/{target_id}/block_id/{block_id}',
+                'Plugin\EccubeApi\Controller\EccubeApiCRUDController::findBlockPosition')
+            ->bind('api_operation_find_block_position')
+            ->assert('page_id', '\d+')->assert('target_id', '\d+')->assert('block_id', '\d+');
+        $c->post('/block_position', 'Plugin\EccubeApi\Controller\EccubeApiCRUDController::createBlockPosition')
+            ->bind('api_operation_create_block_position');
+        $c->put('/block_position/page_id/{page_id}/target_id/{target_id}/block_id/{block_id}',
+                'Plugin\EccubeApi\Controller\EccubeApiCRUDController::updateBlockPosition')
+            ->bind('api_operation_update_block_position')
+            ->assert('page_id', '\d+')->assert('target_id', '\d+')->assert('block_id', '\d+');
+
+
+        $c->get('/{table}', 'Plugin\EccubeApi\Controller\EccubeApiCRUDController::findAll')->bind('api_operation_findall')->assert('table', '\w+');
+        $c->post('/{table}', 'Plugin\EccubeApi\Controller\EccubeApiCRUDController::create')->bind('api_operation_create')->assert('table', '\w+');
+        $c->get('/{table}/{id}', 'Plugin\EccubeApi\Controller\EccubeApiCRUDController::find')->bind('api_operation_find')->assert('table', '\w+')->assert('id', '\d+');
+        $c->delete('/{table}/{id}', 'Plugin\EccubeApi\Controller\EccubeApiCRUDController::delete')->bind('api_operation_delete')->assert('table', '\w+')->assert('id', '\d+');
+        $c->put('/{table}/{id}', 'Plugin\EccubeApi\Controller\EccubeApiCRUDController::update')->bind('api_operation_put')->assert('table', '\w+')->assert('id', '\d+');
+
         $c->match('/products', 'Plugin\EccubeApi\Controller\EccubeApiController::products')->bind('api_products');
         $c->get('/products/{id}', 'Plugin\EccubeApi\Controller\EccubeApiController::productsDetail')->bind('api_products_detail')->assert('id', '\d+');
+
         // 認証sample
         $c->get('/productsauthsample/{id}', 'Plugin\EccubeApi\Controller\EccubeApiSampleController::productsDetail')->bind('api_products_auth_sample')->assert('id', '\d+');
         $app->mount($app['config']['api.endpoint'].'/'.$app['config']['api.version'], $c);

@@ -2,7 +2,7 @@
 
 namespace Plugin\EccubeApi\Tests;
 
-use Eccube\Tests\EccubeTestCase;
+use Eccube\Tests\Web\AbstractWebTestCase;
 use Eccube\Application;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Plugin\EccubeApi\Entity\OAuth2\Client as OAuth2Client;
@@ -16,7 +16,7 @@ use Plugin\EccubeApi\Entity\OAuth2\OpenID\PublicKey;
  *
  * @author Kentaro Ohkouchi
  */
-class AbstractEccubeApiTestCase extends EccubeTestCase
+class AbstractEccubeApiTestCase extends AbstractWebTestCase
 {
     /**
      * Client を生成する.
@@ -93,9 +93,17 @@ class AbstractEccubeApiTestCase extends EccubeTestCase
         $UserInfo = new UserInfo();
         $UserInfo->setAddress(new UserInfoAddress());
         if ($User instanceof \Eccube\Entity\Customer) {
+            $Exists = $this->app['eccube.repository.oauth2.openid.userinfo']->findOneBy(array('Customer' => $User));
+            if (is_object($Exists)) {
+                return $Exists;
+            }
             $UserInfo->setCustomer($User);
             $UserInfo->mergeCustomer();
         } else {
+            $Exists = $this->app['eccube.repository.oauth2.openid.userinfo']->findOneBy(array('Member' => $User));
+            if (is_object($Exists)) {
+                return $Exists;
+            }
             $UserInfo->setMember($User);
             $UserInfo->mergeMember();
         }

@@ -37,8 +37,8 @@ class EccubeApiSampleController extends AbstractApiController
             return new Response();
         }
         // OAuth2 Authorization
-        $scope_reuqired = 'read';
-        if (!$this->verifyRequest($app, $scope_reuqired)) {
+        $scope_required = 'read';
+        if (!$this->verifyRequest($app, $request, $scope_required)) {
             return $app['oauth2.server.resource']->getResponse();
         }
 

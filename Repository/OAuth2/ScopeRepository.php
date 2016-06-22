@@ -2,6 +2,8 @@
 
 namespace Plugin\EccubeApi\Repository\OAuth2;
 
+use Eccube\Entity\Member;
+use Symfony\Component\Security\Core\User\UserInterface;
 use Doctrine\ORM\EntityRepository;
 use OAuth2\Storage\ScopeInterface;
 use OAuth2\RequestInterface;
@@ -45,5 +47,27 @@ class ScopeRepository extends EntityRepository implements ScopeInterface
             return implode(' ', $defaultScopes);
         }
         return null;
+    }
+
+    /**
+     * スペース区切りの scope の文字列とユーザーが使用可能なスコープを返します.
+     *
+     * @param string $scope スーペース区切りの scope の文字列
+     * @param UserInterface 対象のユーザー
+     * @return array Scope の配列
+     */
+    public function findByString($scope, UserInterface $User)
+    {
+        if ($User instanceof Member) {
+            $search_key = 'member_flg';
+        } else {
+            $search_key = 'customer_flg';
+        }
+        $scopes = explode(' ', $scope);
+        $qb = $this->createQueryBuilder('s');
+        $qb->select('s')
+            ->where($qb->expr()->in('s.scope', $scopes))
+            ->andWhere('s.'.$search_key.' = 1');
+        return $qb->getQuery()->getResult();
     }
 }

@@ -40,6 +40,7 @@
                                                         <a class="dropdown-toggle--{{ Client.id }}" data-toggle="dropdown" aria-expanded="false"><svg class="cb cb-ellipsis-h"> <use xlink:href="#cb-ellipsis-h" /></svg></a>
                                                         <ul id="client_list__menu--{{ Client.id }}" class="dropdown-menu dropdown-menu-right">
                                                             <li><a href="{{ url('admin_setting_system_client_edit', { 'member_id' : User.id , 'client_id' : Client.id }) }}" >編集</a></li>
+                                                            <li><a href="{{ url('admin_setting_system_client_delete', { 'member_id' : User.id , 'client_id' : Client.id }) }}" {{ csrf_token_for_anchor() }} data-method="delete">削除</a></li>
                                                         </ul>
                                                     </div>
                                                 </td>

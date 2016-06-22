@@ -1,46 +1,12 @@
 {% extends 'default_frame.twig' %}
 
-{% block javascript %}
-    <script>
-        $(function() {
-            var $permissions = $('#permissions');
-            var scopes = {{ scopeAsJson|raw }};
-            for (var i = 0; i < scopes.length; i++) {
-                switch(scopes[i]) {
-                    case 'read':
-                        $permissions.append('<li>データの読込み</li>');
-                        break;
-                    case 'write':
-                        $permissions.append('<li>データの書込み</li>');
-                        break;
-                    case 'openid':
-                        $permissions.append('<li>OpenID 認証</li>');
-                        break;
-                    case 'offline_access':
-                        $permissions.append('<li>オフラインアクセス</li>');
-                        break;
-                    case 'profile':
-                        $permissions.append('<li>プロフィール情報</li>');
-                        break;
-                    case 'email':
-                        $permissions.append('<li>メールアドレス</li>');
-                        break;
-                    case 'phone':
-                        $permissions.append('<li>電話番号</li>');
-                        break;
-                    case 'address':
-                        $permissions.append('<li>住所</li>');
-                        break;
-                    default:
-                }
-            }
-        });
-    </script>
-{% endblock %}
 {% block main %}
     <p>このアプリ連携を許可しますか？</p>
     <p>このアプリは以下のアクセス権を要求しています:</p>
     <ol id="permissions">
+        {% for scope in Scopes %}
+            <li>{{ scope.label }}</li>
+        {% endfor %}
     </ol>
 
     <form id="authorization_form" method="post" action="{{ url('oauth2_server_mypage_authorize') }}{% if nonce|length %}?nonce={{ nonce }}{% endif %}">

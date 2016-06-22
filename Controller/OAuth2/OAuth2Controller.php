@@ -3,9 +3,11 @@
 namespace Plugin\EccubeApi\Controller\OAuth2;
 
 use Eccube\Application;
+use Eccube\Common\Constant;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use OAuth2\HttpFoundationBridge\Response as BridgeResponse;
+use OAuth2\HttpFoundationBridge\Request as BridgeRequest;
 use OAuth2\Encryption\FirebaseJwt as Jwt;
 use Plugin\EccubeApi\Controller\AbstractApiController;
 
@@ -39,7 +41,7 @@ class OAuth2Controller extends AbstractApiController
         $nonce = $request->get('nonce');
         $is_authorized = (boolean)$request->get('authorized');
 
-        $BridgeRequest = \OAuth2\HttpFoundationBridge\Request::createFromGlobals();
+        $BridgeRequest = $this->createFromRequestWrapper($request);
         $Response = new BridgeResponse();
         $form = $app['form.factory']->createNamed(
             '',                 // 無名のフォームを生成
@@ -52,7 +54,7 @@ class OAuth2Controller extends AbstractApiController
 
         $is_admin = false;
         // 認可要求
-        if ('POST' === $request->getMethod()) {
+        if ('POST' === $request->getMethod() && $is_authorized) {
             $form->handleRequest($request);
             // 認可要求の妥当性をチェックする(主にURLパラメータ)
             if (!$server->validateAuthorizeRequest($BridgeRequest, $Response)) {
@@ -62,14 +64,14 @@ class OAuth2Controller extends AbstractApiController
             // ログイン中のユーザーと、認可要求された client_id の妥当性をチェックする.
             // CSRFチェック, Client が使用可能な scope のチェック, ログイン中ユーザーの妥当性チェック
             $Client = $app['eccube.repository.oauth2.client']->findOneBy(array('client_identifier' => $client_id));
-            if ($form->isValid() && $app->user() instanceof \Eccube\Entity\Member && $Client->hasMember()) {
+            if ($form->isValid() && $app->user() instanceof \Eccube\Entity\Member && $Client->hasMember() && $app->isGranted('ROLE_ADMIN')) {
                 $Member = $Client->getMember();
                 if ($Member->getId() !== $app->user()->getId()) {
                     $is_authorized = false;
                 }
                 $UserInfo = $app['eccube.repository.oauth2.openid.userinfo']->findOneBy(array('Member' => $Member));
                 $is_admin = true;
-            } elseif ($form->isValid() && $app->user() instanceof \Eccube\Entity\Customer && $Client->hasCustomer()) {
+            } elseif ($form->isValid() && $app->user() instanceof \Eccube\Entity\Customer && $Client->hasCustomer() && $app->isGranted('ROLE_USER')) {
                 $Customer = $Client->getCustomer();
                 if ($Customer->getId() !== $app->user()->getId()) {
                     $is_authorized = false;
@@ -119,6 +121,7 @@ class OAuth2Controller extends AbstractApiController
         if ($app->user() instanceof \Eccube\Entity\Member) {
             $view = 'EccubeApi/Resource/template/admin/OAuth2/authorization.twig';
         }
+        $Scopes = $app['eccube.repository.oauth2.scope']->findByString($scope, $app->user());
         return $app->render(
             $view,
             array(
@@ -129,7 +132,8 @@ class OAuth2Controller extends AbstractApiController
                 'scope' => $scope,
                 'scopeAsJson' => json_encode($scopes),
                 'nonce' => $nonce,
-                'form' => $form->createView()
+                'form' => $form->createView(),
+                'Scopes' => $Scopes
             )
         );
     }
@@ -173,7 +177,7 @@ class OAuth2Controller extends AbstractApiController
      */
     public function token(Application $app, Request $request)
     {
-        return $app['oauth2.server.token']->handleTokenRequest(\OAuth2\HttpFoundationBridge\Request::createFromGlobals(), new BridgeResponse());
+        return $app['oauth2.server.token']->handleTokenRequest($this->createFromRequestWrapper($request), new BridgeResponse());
     }
 
     /**
@@ -222,6 +226,6 @@ class OAuth2Controller extends AbstractApiController
      */
     public function userInfo(Application $app, Request $request)
     {
-        return $app['oauth2.server.resource']->handleUserInfoRequest(\OAuth2\HttpFoundationBridge\Request::createFromGlobals(), new BridgeResponse());
+        return $app['oauth2.server.resource']->handleUserInfoRequest($this->createFromRequestWrapper($request), new BridgeResponse());
     }
 }

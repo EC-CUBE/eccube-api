@@ -3,8 +3,12 @@
 namespace Plugin\EccubeApi\Controller;
 
 use Eccube\Application;
+use Eccube\Entity\AbstractEntity;
+use Doctrine\ORM\PersistentCollection;
+use Doctrine\ORM\Proxy\Proxy;
 use Symfony\Component\HttpFoundation\Request;
 use OAuth2\HttpFoundationBridge\Response as BridgeResponse;
+use OAuth2\HttpFoundationBridge\Request as BridgeRequest;
 
 /**
  * ApiController の抽象クラス.
@@ -27,12 +31,12 @@ abstract class AbstractApiController
      * @param string $scope_required API リクエストで必要とする scope
      * @return boolean 妥当と判定された場合 true
      */
-    protected function verifyRequest(Application $app, $scope_reuqired = null)
+    protected function verifyRequest(Application $app, Request $request, $scope_required = null)
     {
         return $app['oauth2.server.resource']->verifyResourceRequest(
-            \OAuth2\Request::createFromGlobals(),
+            $this->createFromRequestWrapper($request),
             new BridgeResponse(),
-            $scope_reuqired
+            $scope_required
         );
     }
 
@@ -93,5 +97,45 @@ abstract class AbstractApiController
         }
 
         return array('errors' => $errors);
+    }
+
+    /**
+     * エラーレスポンスを返します.
+     *
+     * @param Application $app
+     * @param string $message エラーメッセージ
+     * @param integer $statusCode 返却する HTTP Status コード
+     * @return \OAuth2\HttpFoundationBridge\Response でラップしたレスポンス.
+
+     */
+    protected function getWrapperedErrorResponseBy(Application $app, $message = 'Not found', $statusCode = 404)
+    {
+        $this->addErrors($app, $statusCode, $message);
+        return $this->getWrapperedResponseBy($app, $this->getErrors(), $statusCode);
+    }
+
+    /**
+     * \OAuth2\HttpFoundationBridge\Request に Authorization ヘッダを付与します.
+     *
+     * Apache モジュール版の PHP で Authorization ヘッダが無視されてしまうのを回避するラッパーです.
+     *
+     * @see \OAuth2\HttpFoundationBridge\Request::createFromRequest()
+     * @link https://github.com/EC-CUBE/eccube-api/issues/41
+     * @link https://github.com/bshaffer/oauth2-server-php/issues/433
+     */
+    protected function createFromRequestWrapper(Request $request)
+    {
+        $BridgeRequest = BridgeRequest::createFromRequest($request);
+        // XXX https://github.com/EC-CUBE/eccube-api/issues/41
+        if (!$BridgeRequest->headers->has('Authorization') && function_exists('apache_request_headers')) {
+            $all = apache_request_headers();
+            if (array_key_exists('Authorization', $all) && isset($all['Authorization'])) {
+                $BridgeRequest->headers->set('Authorization', $all['Authorization']);
+            } elseif (array_key_exists('authorization', $all) && isset($all['authorization'])) {
+                // ubuntu + Apache 2.4.x の環境で、キーが小文字になっている場合がある
+                $BridgeRequest->headers->set('Authorization', $all['authorization']);
+            }
+        }
+        return $BridgeRequest;
     }
 }
