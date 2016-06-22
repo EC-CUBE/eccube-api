@@ -757,6 +757,7 @@ class EccubeApiCRUDController extends AbstractApiController
      */
     protected function attribureExclusion($table, $is_authorized_customer = false)
     {
+        $excludes = array();
         // public access
         switch ($table) {
             case 'news':
