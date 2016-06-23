@@ -261,6 +261,9 @@ class EccubeApiCRUDController extends AbstractApiController
         $params_arr[] = $className;
 
         $Results = call_user_func_array($callback, $params_arr);
+        if (!is_object($Results)) {
+            return $this->getWrapperedErrorResponseBy($app);
+        }
 
         $AccessToken = $this->getAccessToken($app, $request);
         $excludeAttribute = array('__initializer__', '__cloner__', '__isInitialized__');
