@@ -75,6 +75,6 @@ class AccessTokenRepository extends EntityRepository implements AccessTokenInter
             'scope'     => $scope,
         ));
         $this->_em->persist($AccessToken);
-        $this->_em->flush();
+        $this->_em->flush($AccessToken);
     }
 }

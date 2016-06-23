@@ -66,7 +66,7 @@ class AbstractEccubeApiTestCase extends AbstractWebTestCase
         $ClientScope->setScope($Scope);
         $this->app['orm.em']->persist($ClientScope);
         $Client->addClientScope($ClientScope);
-        $this->app['orm.em']->flush();
+        $this->app['orm.em']->flush($ClientScope);
     }
 
     public function createPublicKey(UserInfo $UserInfo = null)
@@ -114,7 +114,7 @@ class AbstractEccubeApiTestCase extends AbstractWebTestCase
         $UserInfo->setAddress($UserInfoAddress);
         $this->createPublicKey($UserInfo);
         $this->app['orm.em']->persist($UserInfo);
-        $this->app['orm.em']->flush();
+        $this->app['orm.em']->flush($UserInfo);
         return $UserInfo;
     }
 }
