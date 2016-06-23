@@ -68,8 +68,10 @@ class EccubeApiCRUDController extends AbstractApiController
 
                     case 'customer_address':
                     case 'order':
-                    case 'order_detail':
                         $searchConditions['Customer'] = $AccessToken['client']->getCustomer();
+                        break;
+                    case 'order_detail':
+                        // Customer のみに絞る
                         break;
                 }
                 $excludes = $this->attribureExclusion($table, true);
@@ -86,7 +88,16 @@ class EccubeApiCRUDController extends AbstractApiController
         $excludeAttribute = array_merge($excludeAttribute, $excludes);
 
         // TODO LIMIT, OFFSET が必要
-        foreach ($Repository->findBy($searchConditions) as $Entity) {
+        if ($table == 'order_detail') { // FIXME EC-CUBE本体側に実装すべき
+            $qb = $Repository->createQueryBuilder('od')
+                ->leftJoin('od.Order', 'o')
+                ->andWhere('o.Customer = :Customer')
+                ->setParameter('Customer', $AccessToken['client']->getCustomer());
+            $FindResults = $qb->getQuery()->getResult();
+        } else {
+            $FindResults = $Repository->findBy($searchConditions);
+        }
+        foreach ($FindResults as $Entity) {
             $Results[] = EntityUtil::entityToArray($app, $Entity, $excludeAttribute);
         }
 
@@ -277,11 +288,17 @@ class EccubeApiCRUDController extends AbstractApiController
                         break;
                     case 'customer_address':
                     case 'order':
-                    case 'order_detail':
                         if (is_array($Results) && $Results[$table]['Customer']['id'] != $AccessToken['client']->getCustomer()->getId()) {
                             return $this->getWrapperedErrorResponseBy($app, 'Access Forbidden', 403);
                         }
                         break;
+                    case 'order_detail':
+                        // XXX EC-CUBE本体側の OrderDetailRepository で実装すべき
+                        $OrderDetail = $app['orm.em']->getRepository($className)->find($id);
+                        $Order = $OrderDetail->getOrder();
+                        if ($Order->getCustomer()->getId() != $AccessToken['client']->getCustomer()->getId()) {
+                            return $this->getWrapperedErrorResponseBy($app, 'Access Forbidden', 403);
+                        }
                 }
                 $excludes= $this->attribureExclusion($table, true);
             }
@@ -416,6 +433,8 @@ class EccubeApiCRUDController extends AbstractApiController
                         return $this->getWrapperedErrorResponseBy($app, 'Access Forbidden', 403);
                     }
                     break;
+                default:
+                    return $this->getWrapperedErrorResponseBy($app, 'Access Forbidden', 403);
             }
         }
 
@@ -578,6 +597,8 @@ class EccubeApiCRUDController extends AbstractApiController
                         'del_flg'
                     );
                     break;
+                default:
+                    return $this->getWrapperedErrorResponseBy($app, 'Access Forbidden', 403);
             }
         }
         $excludeAttribute = array_merge($excludeAttribute, $excludes);
@@ -632,13 +653,15 @@ class EccubeApiCRUDController extends AbstractApiController
         if (is_array($AccessToken) && $AccessToken['client']->hasCustomer()) {
             switch ($table) {
                 case 'customer':
-                    return $this->getWrapperedErrorResponseBy($app, 'Access Forbidden', 403);
+                    return $this->getWrapperedErrorResponseBy($app, 'Method Not Allowed', 405);
                     break;
                 case 'customer_address':
                     if ($Entity->getCustomer()->getId() != $AccessToken['client']->getCustomer()->getId()) {
                         return $this->getWrapperedErrorResponseBy($app, 'Access Forbidden', 403);
                     }
                     break;
+                default:
+                    return $this->getWrapperedErrorResponseBy($app, 'Method Not Allowed', 405);
             }
         }
 
