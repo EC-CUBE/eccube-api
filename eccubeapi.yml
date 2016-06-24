@@ -401,6 +401,9 @@ paths:
           schema:
             type: object
             required:
+              - product_id
+              - category_id
+              - rank
               - Product
               - Category
             properties:
@@ -411,11 +414,11 @@ paths:
               category_id:
                 type: integer
                 format: int32
-                example: 6
+                example: 5
               rank:
                 type: integer
                 format: int32
-                example: 7
+                example: 10
               Product:
                 type: object
                 properties:
@@ -495,6 +498,8 @@ paths:
           schema:
             type: object
             required:
+              - product_id
+              - category_id
               - Product
               - Category
             properties:
@@ -505,11 +510,11 @@ paths:
               category_id:
                 type: integer
                 format: int32
-                example: 6
+                example: 5
               rank:
                 type: integer
                 format: int32
-                example: 7
+                example: 10
               Product:
                 type: object
                 properties:
@@ -1145,15 +1150,23 @@ definitions:
   product_category:
       type: object
       required:
-        - name
-        - Creator
+        - product_id
+        - category_id
+        - Product
+        - Category
       properties:
         product_id:
           type: integer
           format: int32
+          example: 2
         category_id:
           type: integer
           format: int32
+          example: 5
+        rank:
+          type: integer
+          format: int32
+          example: 10
         Product:
           type: object
           properties:
