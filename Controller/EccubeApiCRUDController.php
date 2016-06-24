@@ -558,7 +558,7 @@ class EccubeApiCRUDController extends AbstractApiController
         }
 
         $AccessToken = $this->getAccessToken($app, $request);
-        $excludeAttribute = array('__initializer__', '__cloner__', '__isInitialized__');
+        $excludeAttribute = array('__initializer__', '__cloner__', '__isInitialized__', 'id');
         $excludes = array();
         // Customer で認証されている場合
         if (is_array($AccessToken) && $AccessToken['client']->hasCustomer()) {
