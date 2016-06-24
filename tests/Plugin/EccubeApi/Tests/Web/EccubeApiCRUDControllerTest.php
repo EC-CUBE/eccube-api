@@ -733,6 +733,11 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
             }
 
             $Entity = $this->app['orm.em']->getRepository($className)->findOneBy(array());
+            dump($className.' '.$table_name.' '.$metadata->table['name']);
+            if ($table_name == 'order') {
+                dump($metadata);
+            }
+
             $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, $table_name.'_read '.$table_name.'_write');
             // XXX 複合キーの対応
             $url = $this->app->url('api_operation_delete', array('table' => $table_name, 'id' => $Entity->getId()));
@@ -904,6 +909,223 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
         );
 
         $this->expected = 405;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+    }
+
+    public function testFindAllWithTableNotFound()
+    {
+        $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, 'product_read product_write');
+        $crawler = $this->client->request(
+            'GET',
+            $this->app->path('api_operation_findall', array('table' => 'pro')),
+            array(),
+            array(),
+            array(
+                'HTTP_AUTHORIZATION' => 'Bearer '.$this->AccessToken['token'],
+                'CONTENT_TYPE' => 'application/json',
+            )
+        );
+
+        $this->expected = 404;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+    }
+
+    public function testFindOnceWithTableNotFound()
+    {
+        $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, 'product_read product_write');
+        $crawler = $this->client->request(
+            'GET',
+            $this->app->path('api_operation_find', array('table' => 'pro', 'id' => 1)),
+            array(),
+            array(),
+            array(
+                'HTTP_AUTHORIZATION' => 'Bearer '.$this->AccessToken['token'],
+                'CONTENT_TYPE' => 'application/json',
+            )
+        );
+
+        $this->expected = 404;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+    }
+
+    public function testCreateWithTableNotFound()
+    {
+        $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, 'product_read product_write');
+        $crawler = $this->client->request(
+            'POST',
+            $this->app->path('api_operation_create', array('table' => 'pro')),
+            array(),
+            array(),
+            array(
+                'HTTP_AUTHORIZATION' => 'Bearer '.$this->AccessToken['token'],
+                'CONTENT_TYPE' => 'application/json',
+            ),
+            json_encode(array('aaa' => 5))
+        );
+
+        $this->expected = 404;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+    }
+
+    public function testUpdateWithTableNotFound()
+    {
+        $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, 'product_read product_write');
+        $crawler = $this->client->request(
+            'PUT',
+            $this->app->path('api_operation_put', array('table' => 'pro', 'id' => 1)),
+            array(),
+            array(),
+            array(
+                'HTTP_AUTHORIZATION' => 'Bearer '.$this->AccessToken['token'],
+                'CONTENT_TYPE' => 'application/json',
+            ),
+            json_encode(array('aaa' => 5))
+        );
+
+        $this->expected = 404;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+    }
+
+    public function testDeleteWithTableNotFound()
+    {
+        $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, 'product_read product_write');
+        $crawler = $this->client->request(
+            'DELETE',
+            $this->app->path('api_operation_delete', array('table' => 'pro', 'id' => 1)),
+            array(),
+            array(),
+            array(
+                'HTTP_AUTHORIZATION' => 'Bearer '.$this->AccessToken['token'],
+                'CONTENT_TYPE' => 'application/json',
+            )
+        );
+
+        $this->expected = 404;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+    }
+
+    /**
+     * 存在しないフィールドを含めて更新する.
+     */
+    public function testUpdateWithUnknownField()
+    {
+        $Product = $this->createProduct();
+        $product_id = $Product->getId();
+        $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, 'product_read product_write');
+        $crawler = $this->client->request(
+            'PUT',
+            $this->app->path('api_operation_put', array('table' => 'product', 'id' => $product_id)),
+            array(),
+            array(),
+            array(
+                'HTTP_AUTHORIZATION' => 'Bearer '.$this->AccessToken['token'],
+                'CONTENT_TYPE' => 'application/json',
+            ),
+            json_encode(
+                array(
+                    'aaa' => 5,
+                    'name' => 'aaaa',
+                )
+            )
+        );
+
+        $this->expected = 204;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+
+        $Result = $this->app['eccube.repository.product']->find($product_id);
+        $this->expected = 'aaaa';
+        $this->actual = $Result->getName();
+        $this->verify();
+    }
+
+    /**
+     * SQLエラーを発生させる.
+     */
+    public function testUpdateWithException()
+    {
+        $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, 'db_read db_write');
+        $crawler = $this->client->request(
+            'PUT',
+            $this->app->path('api_operation_put', array('table' => 'db', 'id' => 1)),
+            array(),
+            array(),
+            array(
+                'HTTP_AUTHORIZATION' => 'Bearer '.$this->AccessToken['token'],
+                'CONTENT_TYPE' => 'application/json',
+            ),
+            json_encode(
+                array(
+                    'id' => 'aaaa',
+                    'name' => 'aaaa',
+                    'rank' => 'aaaa'
+                )
+            )
+        );
+
+        $this->expected = 400;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+    }
+
+    /**
+     * SQLエラーを発生させる.
+     */
+    public function testUpdateWithNotNullException()
+    {
+        $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, 'db_read db_write');
+        $crawler = $this->client->request(
+            'PUT',
+            $this->app->path('api_operation_put', array('table' => 'db', 'id' => 1)),
+            array(),
+            array(),
+            array(
+                'HTTP_AUTHORIZATION' => 'Bearer '.$this->AccessToken['token'],
+                'CONTENT_TYPE' => 'application/json',
+            ),
+            json_encode(
+                array(
+                    'name' => 'aaaa',
+                    'rank' => null
+                )
+            )
+        );
+
+        $this->expected = 400;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+    }
+
+    /**
+     * SQLエラーを発生させる.
+     */
+    public function testUpdateWithEmptyException()
+    {
+        $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, 'db_read db_write');
+        $crawler = $this->client->request(
+            'PUT',
+            $this->app->path('api_operation_put', array('table' => 'db', 'id' => 1)),
+            array(),
+            array(),
+            array(
+                'HTTP_AUTHORIZATION' => 'Bearer '.$this->AccessToken['token'],
+                'CONTENT_TYPE' => 'application/json',
+            ),
+            json_encode(
+                array(
+                    'name' => 'aaaa',
+                    'rank' => ''
+                )
+            )
+        );
+
+        $this->expected = 400;
         $this->actual = $this->client->getResponse()->getStatusCode();
         $this->verify();
     }

@@ -479,7 +479,7 @@ class EccubeApiCRUDAuthencationTest extends AbstractEccubeApiWebTestCase
     /**
      * Customer で更新可能な API のテスト
      */
-    public function testDeleteWithAllowCustomer()
+    public function testUpdateWithAllowCustomer()
     {
         $this->createEntities();
         $this->createOrder($this->Customer);
@@ -587,7 +587,7 @@ class EccubeApiCRUDAuthencationTest extends AbstractEccubeApiWebTestCase
     /**
      * Customer で削除可能な API のテスト
      */
-    public function testUpdateWithAllowCustomer()
+    public function testDeleteWithAllowCustomer()
     {
         $this->createEntities();
         $this->createOrder($this->Customer);
@@ -692,6 +692,377 @@ class EccubeApiCRUDAuthencationTest extends AbstractEccubeApiWebTestCase
     }
 
     /**
+     * 自分自身のパスワード, メールアドレスを変更しようとする
+     */
+    public function testUpdateCustomerWithIlleguler()
+    {
+        // $CustomerAddresses = $this->app['eccube.repository.customer_address']->findBy(array('Customer' => $this->Customer));
+        // foreach ($CustomerAddresses as $CustomerAddress) {
+        //     $this->app['orm.em']->remove($CustomerAddress);
+        //     $this->app['orm.em']->flush($CustomerAddress);
+        // }
+        $arrayEntity = array(
+            'email' => 'test@example.com',
+            'password' => 'password'
+        );
+
+        $access_token = $this->doAuthencation($this->Customer, 'customer_read customer_write');
+        $headers = array(
+            'HTTP_AUTHORIZATION' => 'Bearer '.$access_token,
+            'CONTENT_TYPE' => 'application/json'
+        );
+
+        $customer_id = $this->Customer->getId();
+        $password = $this->Customer->getPassword();
+        $crawler = $this->client->request(
+            'PUT',
+            $this->app->path('api_operation_put', array('table' => 'customer', 'id' => $customer_id)),
+            array(),
+            array(),
+            $headers,
+            json_encode($arrayEntity)
+        );
+
+        $this->expected = 204;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+
+        $this->app['orm.em']->detach($this->Customer);
+        $ResultCustomer = $this->app['eccube.repository.customer']->find($customer_id);
+
+        $this->expected = $password;
+        $this->actual = $ResultCustomer->getPassword();
+        $this->verify('パスワードは変更されない');
+
+        $this->expected = 'test@example.com';
+        $this->actual = $ResultCustomer->getEmail();
+        $this->verify('メールアドレスは変更される');
+    }
+
+    /**
+     * 他人のパスワード, メールアドレスを変更しようとする
+     */
+    public function testUpdateOtherCustomerWithIlleguler()
+    {
+        $arrayEntity = array(
+            'email' => 'test@example.com',
+            'password' => 'password'
+        );
+
+        $access_token = $this->doAuthencation($this->Customer, 'customer_read customer_write');
+        $headers = array(
+            'HTTP_AUTHORIZATION' => 'Bearer '.$access_token,
+            'CONTENT_TYPE' => 'application/json'
+        );
+
+        $OtherCustomer = $this->createCustomer();
+        $customer_id = $OtherCustomer->getId();
+        $password = $OtherCustomer->getPassword();
+        $crawler = $this->client->request(
+            'PUT',
+            $this->app->path('api_operation_put', array('table' => 'customer', 'id' => $customer_id)),
+            array(),
+            array(),
+            $headers,
+            json_encode($arrayEntity)
+        );
+
+        $this->expected = 403;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+
+        $this->app['orm.em']->detach($this->Customer);
+        $ResultCustomer = $this->app['eccube.repository.customer']->find($customer_id);
+
+        $this->expected = 'password';
+        $this->actual = $ResultCustomer->getPassword();
+        $this->assertNotEquals($this->expected, $this->actual, 'パスワードは変更されない');
+
+        $this->expected = 'test@example.com';
+        $this->actual = $ResultCustomer->getEmail();
+        $this->assertNotEquals($this->expected, $this->actual, 'メールアドレスは変更されない');
+    }
+
+    /**
+     * 会員住所IDを変更しようとする
+     */
+    public function testUpdateCustomerAddressWithId()
+    {
+        $CustomerAddress = $this->app['eccube.repository.customer_address']->findOneBy(array('Customer' => $this->Customer));
+        $arrayEntity = array(
+            'id' => 999999,
+            'zip01' => 999,
+            'zip02' => 9999
+        );
+
+        $access_token = $this->doAuthencation($this->Customer, 'customer_address_read customer_address_write');
+        $headers = array(
+            'HTTP_AUTHORIZATION' => 'Bearer '.$access_token,
+            'CONTENT_TYPE' => 'application/json'
+        );
+
+        $id = $CustomerAddress->getId();
+        $crawler = $this->client->request(
+            'PUT',
+            $this->app->path('api_operation_put', array('table' => 'customer_address', 'id' => $id)),
+            array(),
+            array(),
+            $headers,
+            json_encode($arrayEntity)
+        );
+
+        $this->expected = 204;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+
+        $this->app['orm.em']->detach($CustomerAddress);
+        $Result = $this->app['eccube.repository.customer_address']->find($id);
+
+        $this->assertNotNull($Result, 'IDの変更は無視される');
+
+        $this->expected = 999;
+        $this->actual = $Result->getZip01();
+        $this->verify();
+
+        $this->expected = 9999;
+        $this->actual = $Result->getZip02();
+        $this->verify();
+    }
+
+    /**
+     * 他人の受注明細を取得しようとする
+     */
+    public function testFindOtherCustomer()
+    {
+        $OtherOrder = $this->createOrder($this->createCustomer());
+        $OrderDetails = $OtherOrder->getOrderDetails();
+
+        $access_token = $this->doAuthencation($this->Customer, 'order_read');
+        $headers = array(
+            'HTTP_AUTHORIZATION' => 'Bearer '.$access_token,
+            'CONTENT_TYPE' => 'application/json'
+        );
+
+        $crawler = $this->client->request(
+            'GET',
+            $this->app->path('api_operation_find', array('table' => 'order_detail', 'id' => $OrderDetails[0]->getId())),
+            array(),
+            array(),
+            $headers
+        );
+
+        $this->expected = 403;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+    }
+
+    /**
+     * 他人の住所を変更しようとする
+     */
+    public function testUpdateOtherCustomerAddress()
+    {
+        $OtherCustomer = $this->createCustomer();
+        $CustomerAddress = $this->app['eccube.repository.customer_address']->findOneBy(array('Customer' => $OtherCustomer));
+
+        $access_token = $this->doAuthencation($this->Customer, 'customer_address_read customer_address_write');
+        $headers = array(
+            'HTTP_AUTHORIZATION' => 'Bearer '.$access_token,
+            'CONTENT_TYPE' => 'application/json'
+        );
+
+        $arrayEntity = array(
+            'id' => 999999,
+            'zip01' => 999,
+            'zip02' => 9999
+        );
+
+        $crawler = $this->client->request(
+            'PUT',
+            $this->app->path('api_operation_put', array('table' => 'customer_address', 'id' => $CustomerAddress->getId())),
+            array(),
+            array(),
+            $headers,
+            json_encode($arrayEntity)
+        );
+
+        $this->expected = 403;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+    }
+
+    /**
+     * 他人の住所を削除しようとする
+     */
+    public function testDeleteOtherCustomerAddress()
+    {
+        $OtherCustomer = $this->createCustomer();
+        $CustomerAddress = $this->app['eccube.repository.customer_address']->findOneBy(array('Customer' => $OtherCustomer));
+
+        $access_token = $this->doAuthencation($this->Customer, 'customer_address_read customer_address_write');
+        $headers = array(
+            'HTTP_AUTHORIZATION' => 'Bearer '.$access_token,
+            'CONTENT_TYPE' => 'application/json'
+        );
+
+        $crawler = $this->client->request(
+            'DELETE',
+            $this->app->path('api_operation_delete', array('table' => 'customer_address', 'id' => $CustomerAddress->getId())),
+            array(),
+            array(),
+            $headers
+        );
+
+        $this->expected = 403;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+    }
+
+    /**
+     * 認可されていない操作をする
+     */
+    public function testNotAuthencation()
+    {
+        $Product = $this->createProduct();
+        // product_read を許可しない
+        $access_token = $this->doAuthencation($this->Member, 'product_write');
+        $headers = array(
+            'HTTP_AUTHORIZATION' => 'Bearer '.$access_token,
+            'CONTENT_TYPE' => 'application/json'
+        );
+
+        $crawler = $this->client->request(
+            'GET',
+            $this->app->path('api_operation_find', array('table' => 'product', 'id' => $Product->getId())),
+            array(),
+            array(),
+            $headers
+        );
+
+        $this->expected = 403;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+
+        $Errors = json_decode($this->client->getResponse()->getContent(), true);
+        $this->expected = 'insufficient_scope';
+        $this->actual = $Errors['error'];
+        $this->verify();
+
+        $this->expected = 'The request requires higher privileges than provided by the access token';
+        $this->actual = $Errors['error_description'];
+        $this->verify();
+    }
+
+    /**
+     * 期限切れのアクセストークンで操作をする
+     */
+    public function testAuthencationExpired()
+    {
+        $Product = $this->createProduct();
+        $token = $this->doAuthencation($this->Member, 'product_read');
+        $AccessToken = $this->app['eccube.repository.oauth2.access_token']->findOneBy(array('token' => $token));
+        $AccessToken->setExpires(new \DateTime('-1 seconds'));
+        $this->app['orm.em']->flush($AccessToken);
+
+        $headers = array(
+            'HTTP_AUTHORIZATION' => 'Bearer '.$token,
+            'CONTENT_TYPE' => 'application/json'
+        );
+
+        $crawler = $this->client->request(
+            'GET',
+            $this->app->path('api_operation_find', array('table' => 'product', 'id' => $Product->getId())),
+            array(),
+            array(),
+            $headers
+        );
+
+        $this->expected = 401;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+
+        $Errors = json_decode($this->client->getResponse()->getContent(), true);
+        $this->expected = 'expired_token';
+        $this->actual = $Errors['error'];
+        $this->verify();
+
+        $this->expected = 'The access token provided has expired';
+        $this->actual = $Errors['error_description'];
+        $this->verify();
+    }
+
+    /**
+     * 期限切れのアクセストークンで public access 可能なテーブルを取得する
+     */
+    public function testNotAuthencationWithPublic()
+    {
+        $Product = $this->createProduct();
+        $token = $this->doAuthencation($this->Member, 'product_read');
+        $AccessToken = $this->app['eccube.repository.oauth2.access_token']->findOneBy(array('token' => $token));
+        $AccessToken->setExpires(new \DateTime('-1 seconds'));
+        $this->app['orm.em']->flush($AccessToken);
+
+        $headers = array(
+            'HTTP_AUTHORIZATION' => 'Bearer '.$token,
+            'CONTENT_TYPE' => 'application/json'
+        );
+
+        $crawler = $this->client->request(
+            'GET',
+            $this->app->path('api_operation_find', array('table' => 'product', 'id' => $Product->getId())),
+            array(),
+            array(),
+            $headers
+        );
+
+        $this->expected = 401;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+
+        $Errors = json_decode($this->client->getResponse()->getContent(), true);
+        $this->expected = 'expired_token';
+        $this->actual = $Errors['error'];
+        $this->verify();
+
+        $this->expected = 'The access token provided has expired';
+        $this->actual = $Errors['error_description'];
+        $this->verify();
+    }
+
+    /**
+     * Bearer 以外のトークンを使用する
+     */
+    public function testNotBearer()
+    {
+        $Product = $this->createProduct();
+        $access_token = $this->doAuthencation($this->Member, 'db_read');
+        $headers = array(
+            'HTTP_AUTHORIZATION' => 'Basic '.$access_token, // Bearer 以外
+            'CONTENT_TYPE' => 'application/json'
+        );
+
+        $crawler = $this->client->request(
+            'GET',
+            $this->app->path('api_operation_find', array('table' => 'db', 'id' => 1)),
+            array(),
+            array(),
+            $headers
+        );
+
+        $this->expected = 400;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+
+        $Errors = json_decode($this->client->getResponse()->getContent(), true);
+        $this->expected = 'invalid_request';
+        $this->actual = $Errors['error'];
+        $this->verify();
+
+        $this->expected = 'Malformed auth header';
+        $this->actual = $Errors['error_description'];
+        $this->verify();
+    }
+
+    /**
      * 認可要求をし, アクセストークンを発行します.
      *
      * @param UserInterface
@@ -715,8 +1086,12 @@ class EccubeApiCRUDAuthencationTest extends AbstractEccubeApiWebTestCase
 
         $this->state = sha1(openssl_random_pseudo_bytes(100));
         $this->nonce = sha1(openssl_random_pseudo_bytes(100));
+        $route = 'oauth2_server_mypage_authorize';
+        if ($User instanceof \Eccube\Entity\Member) {
+            $route = 'oauth2_server_admin_authorize';
+        }
 
-        $path = $this->app->path('oauth2_server_mypage_authorize');
+        $path = $this->app->path($route);
         $params = array(
                     'client_id' => $this->OAuth2Client->getClientIdentifier(),
                     'redirect_uri' => $this->OAuth2Client->getRedirectUri(),
