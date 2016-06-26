@@ -24,6 +24,8 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
     protected $AuthorityRole;
     protected $tables;
     protected $AccessToken;
+    protected $UserInfo;
+    protected $OAuth2Client;
 
     public function setUp()
     {
@@ -33,22 +35,29 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
 
         // OAuth2.0 認証処理
         $client = $this->loginTo($this->Member);
-        $this->AccessToken = $this->doAuthorized($this->Member);
+        $this->UserInfo = $this->createUserInfo($this->Member);
+        $this->OAuth2Client = $this->createApiClient(
+            $this->Member,
+            'test-client-name',
+            'test-client-id',
+            'test-client-secret',
+            'http://example.com/redirect_uri'
+        );
+
     }
 
     public function testFindAll()
     {
         $client = $this->client;
-        $AccessToken = $this->AccessToken;
         $app = $this->app;
-        $this->verifyFind(function ($table_name, $Entity) use ($app, $client, $AccessToken) {
+        $this->verifyFind(function ($table_name, $Entity, $access_token) use ($app, $client) {
             $crawler = $client->request(
                 'GET',
                 $app->path('api_operation_findall', array('table' => $table_name)),
                 array(),
                 array(),
                 array(
-                    'HTTP_AUTHORIZATION' => 'Bearer '.$AccessToken['token'],
+                    'HTTP_AUTHORIZATION' => 'Bearer '.$access_token,
                     'CONTENT_TYPE' => 'application/json',
                 )
             );
@@ -60,9 +69,8 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
     public function testFindOnce()
     {
         $client = $this->client;
-        $AccessToken = $this->AccessToken;
         $app = $this->app;
-        $this->verifyFind(function ($table_name, $Entity) use ($app, $client, $AccessToken) {
+        $this->verifyFind(function ($table_name, $Entity, $access_token) use ($app, $client) {
 
             // XXX 複合キーのテーブルは除外
             switch ($table_name) {
@@ -82,7 +90,7 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
                 array(),
                 array(),
                 array(
-                    'HTTP_AUTHORIZATION' => 'Bearer '.$AccessToken['token'],
+                    'HTTP_AUTHORIZATION' => 'Bearer '.$access_token,
                     'CONTENT_TYPE' => 'application/json',
                 )
 
@@ -97,10 +105,9 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
     public function testFindProductCategory()
     {
         $client = $this->client;
-        $AccessToken = $this->AccessToken;
         $app = $this->app;
 
-        $this->verifyFind(function ($table_name, $Entity) use ($app, $client, $AccessToken) {
+        $this->verifyFind(function ($table_name, $Entity, $access_token) use ($app, $client) {
 
             $crawler = $client->request(
                 'GET',
@@ -112,7 +119,7 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
                 array(),
                 array(),
                 array(
-                    'HTTP_AUTHORIZATION' => 'Bearer '.$AccessToken['token'],
+                    'HTTP_AUTHORIZATION' => 'Bearer '.$access_token,
                     'CONTENT_TYPE' => 'application/json',
                 )
 
@@ -126,10 +133,9 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
     public function testFindPaymentOption()
     {
         $client = $this->client;
-        $AccessToken = $this->AccessToken;
         $app = $this->app;
 
-        $this->verifyFind(function ($table_name, $Entity) use ($app, $client, $AccessToken) {
+        $this->verifyFind(function ($table_name, $Entity, $access_token) use ($app, $client) {
 
             $crawler = $client->request(
                 'GET',
@@ -141,7 +147,7 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
                 array(),
                 array(),
                 array(
-                    'HTTP_AUTHORIZATION' => 'Bearer '.$AccessToken['token'],
+                    'HTTP_AUTHORIZATION' => 'Bearer '.$access_token,
                     'CONTENT_TYPE' => 'application/json',
                 )
 
@@ -155,10 +161,9 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
     public function testFindBlockPosition()
     {
         $client = $this->client;
-        $AccessToken = $this->AccessToken;
         $app = $this->app;
 
-        $this->verifyFind(function ($table_name, $Entity) use ($app, $client, $AccessToken) {
+        $this->verifyFind(function ($table_name, $Entity, $access_token) use ($app, $client) {
 
             $crawler = $client->request(
                 'GET',
@@ -171,7 +176,7 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
                 array(),
                 array(),
                 array(
-                    'HTTP_AUTHORIZATION' => 'Bearer '.$AccessToken['token'],
+                    'HTTP_AUTHORIZATION' => 'Bearer '.$access_token,
                     'CONTENT_TYPE' => 'application/json',
                 )
 
@@ -232,6 +237,9 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
                     continue 2;
                 default:
             }
+
+
+            $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, $table_name.'_read '.$table_name.'_write');
 
             $Entity = $this->app['orm.em']->getRepository($className)->findOneBy(array());
             // 各テーブル特有の処理
@@ -316,6 +324,7 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
 
         $arrayEntity = EntityUtil::entityToArray($this->app, $Entity);
 
+        $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, 'product_category_read product_category_write');
         $url = $this->app->url('api_operation_create_product_category');
         $crawler = $this->client->request(
             'POST',
@@ -376,6 +385,7 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
         $Entity->setDeliveryId($Delivery->getId());
 
         $arrayEntity = EntityUtil::entityToArray($this->app, $Entity);
+        $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, 'payment_option_read payment_option_write');
 
         $url = $this->app->url('api_operation_create_payment_option');
         $crawler = $this->client->request(
@@ -432,7 +442,7 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
         $Entity->setBlockRow(100);
 
         $arrayEntity = EntityUtil::entityToArray($this->app, $Entity);
-
+        $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, 'block_position_read block_position_write');
         $url = $this->app->url('api_operation_create_block_position');
         $crawler = $this->client->request(
             'POST',
@@ -496,7 +506,7 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
         $this->app['orm.em']->persist($Entity);
         $this->app['orm.em']->flush($Entity);
 
-
+        $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, 'product_category_read product_category_write');
         $arrayEntity = EntityUtil::entityToArray($this->app, $Entity);
         $arrayEntity['rank'] = 888;
 
@@ -559,7 +569,7 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
 
         $arrayEntity = EntityUtil::entityToArray($this->app, $Entity);
         $arrayEntity['block_row'] = 777;
-
+        $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, 'block_position_read block_position_write');
         $url = $this->app->url('api_operation_update_block_position',
                                array(
                                    'page_id' => $Page->getId(),
@@ -640,7 +650,7 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
                     continue 2;
                 default:
             }
-
+            $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, $table_name.'_read '.$table_name.'_write');
             $properties = $this->createProperties($metadata);
             $Entity = $this->app['orm.em']->getRepository($className)->findOneBy(array());
             $Entity->setPropertiesFromArray($properties);
@@ -723,7 +733,12 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
             }
 
             $Entity = $this->app['orm.em']->getRepository($className)->findOneBy(array());
+            dump($className.' '.$table_name.' '.$metadata->table['name']);
+            if ($table_name == 'order') {
+                dump($metadata);
+            }
 
+            $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, $table_name.'_read '.$table_name.'_write');
             // XXX 複合キーの対応
             $url = $this->app->url('api_operation_delete', array('table' => $table_name, 'id' => $Entity->getId()));
             $crawler = $this->client->request(
@@ -811,6 +826,7 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
         $Entity = $this->app['eccube.repository.product']->find(1);
         $arrayEntity = EntityUtil::entityToArray($this->app, $Entity);
         $url = $this->app->url('api_operation_put', array('table' => 'product', 'id' => 999999999));
+        $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, 'product_read product_write');
         $crawler = $this->client->request(
             'PUT',
             $url,
@@ -830,6 +846,7 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
 
     public function testUpdateMultipleIdWithNotFound()
     {
+        $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, 'product_category_read product_category_write');
         $Entity = $this->app['orm.em']->getRepository('\\Eccube\\Entity\\ProductCategory')->findOneBy(array());
         $arrayEntity = EntityUtil::entityToArray($this->app, $Entity);
         $url = $this->app->url('api_operation_put', array('table' => 'product_category', 'id' => 999999999));
@@ -852,6 +869,7 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
 
     public function testDeleteWithNotFound()
     {
+        $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, 'product_read product_write');
         $Entity = $this->app['eccube.repository.product']->find(1);
         $arrayEntity = EntityUtil::entityToArray($this->app, $Entity);
         $url = $this->app->url('api_operation_delete', array('table' => 'product', 'id' => 999999999));
@@ -874,6 +892,7 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
 
     public function testDeleteMultipleWithNotFound()
     {
+        $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, 'product_category_read product_category_write');
         $Entity = $this->app['eccube.repository.product']->find(1);
         $arrayEntity = EntityUtil::entityToArray($this->app, $Entity);
         $url = $this->app->url('api_operation_delete', array('table' => 'product_category', 'id' => 999999999));
@@ -890,6 +909,223 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
         );
 
         $this->expected = 405;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+    }
+
+    public function testFindAllWithTableNotFound()
+    {
+        $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, 'product_read product_write');
+        $crawler = $this->client->request(
+            'GET',
+            $this->app->path('api_operation_findall', array('table' => 'pro')),
+            array(),
+            array(),
+            array(
+                'HTTP_AUTHORIZATION' => 'Bearer '.$this->AccessToken['token'],
+                'CONTENT_TYPE' => 'application/json',
+            )
+        );
+
+        $this->expected = 404;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+    }
+
+    public function testFindOnceWithTableNotFound()
+    {
+        $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, 'product_read product_write');
+        $crawler = $this->client->request(
+            'GET',
+            $this->app->path('api_operation_find', array('table' => 'pro', 'id' => 1)),
+            array(),
+            array(),
+            array(
+                'HTTP_AUTHORIZATION' => 'Bearer '.$this->AccessToken['token'],
+                'CONTENT_TYPE' => 'application/json',
+            )
+        );
+
+        $this->expected = 404;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+    }
+
+    public function testCreateWithTableNotFound()
+    {
+        $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, 'product_read product_write');
+        $crawler = $this->client->request(
+            'POST',
+            $this->app->path('api_operation_create', array('table' => 'pro')),
+            array(),
+            array(),
+            array(
+                'HTTP_AUTHORIZATION' => 'Bearer '.$this->AccessToken['token'],
+                'CONTENT_TYPE' => 'application/json',
+            ),
+            json_encode(array('aaa' => 5))
+        );
+
+        $this->expected = 404;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+    }
+
+    public function testUpdateWithTableNotFound()
+    {
+        $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, 'product_read product_write');
+        $crawler = $this->client->request(
+            'PUT',
+            $this->app->path('api_operation_put', array('table' => 'pro', 'id' => 1)),
+            array(),
+            array(),
+            array(
+                'HTTP_AUTHORIZATION' => 'Bearer '.$this->AccessToken['token'],
+                'CONTENT_TYPE' => 'application/json',
+            ),
+            json_encode(array('aaa' => 5))
+        );
+
+        $this->expected = 404;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+    }
+
+    public function testDeleteWithTableNotFound()
+    {
+        $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, 'product_read product_write');
+        $crawler = $this->client->request(
+            'DELETE',
+            $this->app->path('api_operation_delete', array('table' => 'pro', 'id' => 1)),
+            array(),
+            array(),
+            array(
+                'HTTP_AUTHORIZATION' => 'Bearer '.$this->AccessToken['token'],
+                'CONTENT_TYPE' => 'application/json',
+            )
+        );
+
+        $this->expected = 404;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+    }
+
+    /**
+     * 存在しないフィールドを含めて更新する.
+     */
+    public function testUpdateWithUnknownField()
+    {
+        $Product = $this->createProduct();
+        $product_id = $Product->getId();
+        $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, 'product_read product_write');
+        $crawler = $this->client->request(
+            'PUT',
+            $this->app->path('api_operation_put', array('table' => 'product', 'id' => $product_id)),
+            array(),
+            array(),
+            array(
+                'HTTP_AUTHORIZATION' => 'Bearer '.$this->AccessToken['token'],
+                'CONTENT_TYPE' => 'application/json',
+            ),
+            json_encode(
+                array(
+                    'aaa' => 5,
+                    'name' => 'aaaa',
+                )
+            )
+        );
+
+        $this->expected = 204;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+
+        $Result = $this->app['eccube.repository.product']->find($product_id);
+        $this->expected = 'aaaa';
+        $this->actual = $Result->getName();
+        $this->verify();
+    }
+
+    /**
+     * SQLエラーを発生させる.
+     */
+    public function testUpdateWithException()
+    {
+        $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, 'db_read db_write');
+        $crawler = $this->client->request(
+            'PUT',
+            $this->app->path('api_operation_put', array('table' => 'db', 'id' => 1)),
+            array(),
+            array(),
+            array(
+                'HTTP_AUTHORIZATION' => 'Bearer '.$this->AccessToken['token'],
+                'CONTENT_TYPE' => 'application/json',
+            ),
+            json_encode(
+                array(
+                    'id' => 'aaaa',
+                    'name' => 'aaaa',
+                    'rank' => 'aaaa'
+                )
+            )
+        );
+
+        $this->expected = 400;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+    }
+
+    /**
+     * SQLエラーを発生させる.
+     */
+    public function testUpdateWithNotNullException()
+    {
+        $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, 'db_read db_write');
+        $crawler = $this->client->request(
+            'PUT',
+            $this->app->path('api_operation_put', array('table' => 'db', 'id' => 1)),
+            array(),
+            array(),
+            array(
+                'HTTP_AUTHORIZATION' => 'Bearer '.$this->AccessToken['token'],
+                'CONTENT_TYPE' => 'application/json',
+            ),
+            json_encode(
+                array(
+                    'name' => 'aaaa',
+                    'rank' => null
+                )
+            )
+        );
+
+        $this->expected = 400;
+        $this->actual = $this->client->getResponse()->getStatusCode();
+        $this->verify();
+    }
+
+    /**
+     * SQLエラーを発生させる.
+     */
+    public function testUpdateWithEmptyException()
+    {
+        $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, 'db_read db_write');
+        $crawler = $this->client->request(
+            'PUT',
+            $this->app->path('api_operation_put', array('table' => 'db', 'id' => 1)),
+            array(),
+            array(),
+            array(
+                'HTTP_AUTHORIZATION' => 'Bearer '.$this->AccessToken['token'],
+                'CONTENT_TYPE' => 'application/json',
+            ),
+            json_encode(
+                array(
+                    'name' => 'aaaa',
+                    'rank' => ''
+                )
+            )
+        );
+
+        $this->expected = 400;
         $this->actual = $this->client->getResponse()->getStatusCode();
         $this->verify();
     }
@@ -927,10 +1163,10 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
                 case 'category_total_count':
                     continue 2;
             }
-
+            $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, $table_name.'_read');
             // Entity のデータチェックのため、1件だけ取得する
             $Entity = $this->app['orm.em']->getRepository($className)->findOneBy(array());
-            $ApiResult = call_user_func($callback, $table_name, $Entity);
+            $ApiResult = call_user_func($callback, $table_name, $Entity, $this->AccessToken['token']);
 
             $this->expected = 200;
             $this->actual = $client->getResponse()->getStatusCode();

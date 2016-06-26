@@ -43,25 +43,12 @@ class AbstractEccubeApiWebTestCase extends AbstractEccubeApiTestCase
      *
      * @param UserInterface $User ログインさせる User
      */
-    protected function doAuthorized(UserInterface $User)
+    protected function doAuthorized($UserInfo, $Client, $scope_granted = '')
     {
-        $UserInfo = $this->createUserInfo($User);
-        $Client = $this->createApiClient(
-            $User,
-            'test-client-name',
-            'test-client-id',
-            'test-client-secret',
-            'http://example.com/redirect_uri'
-        );
-
-        $Scopes = $this->app['eccube.repository.oauth2.scope']->findAll();
-        $scope_granted = '';
-        foreach ($Scopes as $Scope) {
-            $this->addClientScope($Client, $Scope->getScope());
-            $scope_granted .= ' '.$Scope->getScope();
+        foreach(explode(' ', $scope_granted) as $scope) {
+            $this->addClientScope($Client, $scope);
         }
-        $scope_granted = trim($scope_granted);
-        $token = 'test-token';
+        $token = sha1(openssl_random_pseudo_bytes(100));
 
         $this->app['eccube.repository.oauth2.access_token']->setAccessToken($token, 'test-client-id', $UserInfo->getId(), time() + 3600, $scope_granted);
 
