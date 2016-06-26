@@ -365,6 +365,180 @@ paths:
           description: unexpected error
           schema:
             $ref: '#/definitions/errors'
+  /<base-endpoint>/<base-version>/product_category:
+    get:
+      tags:
+        - CRUD
+      description: dtb_product_category の一覧を取得します。
+      parameters:
+      responses:
+        # Response code
+        200:
+          description: Successful response
+          # A schema describing your response object.
+          # Use JSON Schema format
+          schema:
+            type: array
+            items:
+              title: product_category
+              type: object
+              schema:
+                $ref: '#/definitions/product_category'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/errors'
+    post:
+      tags:
+        - CRUD
+      description: dtb_product_category を生成します。
+      parameters:
+        -
+          in: body
+          name: body
+          description: ProductCategory object that needs to be added to the EC-CUBE.
+          required: true
+          schema:
+            type: object
+            required:
+              - product_id
+              - category_id
+              - rank
+              - Product
+              - Category
+            properties:
+              product_id:
+                type: integer
+                format: int32
+                example: 2
+              category_id:
+                type: integer
+                format: int32
+                example: 5
+              rank:
+                type: integer
+                format: int32
+                example: 10
+              Product:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    format: int32
+                    example: 2
+              Category:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    format: int32
+                    example: 5
+      responses:
+        # Response code
+        201:
+          description: Successful response
+          # A schema describing your response object.
+          # Use JSON Schema format
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/errors'
+  /<base-endpoint>/<base-version>/product_category/product_id/{product_id}/category_id/{category_id}:
+    get:
+      tags:
+        - CRUD
+      description: dtb_product_category をID指定で取得します。IDは商品IDとカテゴリーIDの複合キーです。
+      parameters:
+        -
+          name: product_id
+          in: path
+          description: 商品ID
+          required: true
+          type: integer
+        -
+          name: category_id
+          in: path
+          description: カテゴリーID
+          required: true
+          type: integer
+      responses:
+        # Response code
+        200:
+          description: Successful response
+          # A schema describing your response object.
+          # Use JSON Schema format
+          schema:
+            $ref: '#/definitions/product_category'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/errors'
+    put:
+      tags:
+        - CRUD
+      description: dtb_product_category をID指定で更新します。IDは商品IDとカテゴリーIDの複合キーです。
+      parameters:
+        -
+          name: product_id
+          in: path
+          description: 商品ID
+          required: true
+          type: integer
+        -
+          name: category_id
+          in: path
+          description: カテゴリーID
+          required: true
+          type: integer
+        -
+          in: body
+          name: body
+          description: ProductCategory object that needs to be added to the EC-CUBE.
+          required: true
+          schema:
+            type: object
+            required:
+              - product_id
+              - category_id
+              - Product
+              - Category
+            properties:
+              product_id:
+                type: integer
+                format: int32
+                example: 2
+              category_id:
+                type: integer
+                format: int32
+                example: 5
+              rank:
+                type: integer
+                format: int32
+                example: 10
+              Product:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    format: int32
+                    example: 2
+              Category:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    format: int32
+                    example: 5
+      responses:
+        # Response code
+        204:
+          description: Successful response
+          # A schema describing your response object.
+          # Use JSON Schema format
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/errors'
   /OAuth2/<base-version>/userinfo:
     get:
       tags:
@@ -973,6 +1147,40 @@ definitions:
             id:
               type: integer
               format: int32
+  product_category:
+      type: object
+      required:
+        - product_id
+        - category_id
+        - Product
+        - Category
+      properties:
+        product_id:
+          type: integer
+          format: int32
+          example: 2
+        category_id:
+          type: integer
+          format: int32
+          example: 5
+        rank:
+          type: integer
+          format: int32
+          example: 10
+        Product:
+          type: object
+          properties:
+            id:
+              type: integer
+              format: int32
+              example: 2
+        Category:
+          type: object
+          properties:
+            id:
+              type: integer
+              format: int32
+              example: 5
   userinfo:
     type: object
     required:
