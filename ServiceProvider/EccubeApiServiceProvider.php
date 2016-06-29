@@ -9,6 +9,7 @@
  * file that was distributed with this source code.
  */
 
+
 namespace Plugin\EccubeApi\ServiceProvider;
 
 require_once(__DIR__ . '/../vendor/autoload.php');
