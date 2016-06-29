@@ -1,5 +1,14 @@
 <?php
 
+/*
+ * This file is part of the EccubeApi
+ *
+ * Copyright (C) 2016 LOCKON CO.,LTD. All Rights Reserved.
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Plugin\EccubeApi\Tests\Web;
 
 use Eccube\Common\Constant;
@@ -733,10 +742,6 @@ class EccubeApiCRUDControllerTest extends AbstractEccubeApiWebTestCase
             }
 
             $Entity = $this->app['orm.em']->getRepository($className)->findOneBy(array());
-            dump($className.' '.$table_name.' '.$metadata->table['name']);
-            if ($table_name == 'order') {
-                dump($metadata);
-            }
 
             $this->AccessToken = $this->doAuthorized($this->UserInfo, $this->OAuth2Client, $table_name.'_read '.$table_name.'_write');
             // XXX 複合キーの対応
