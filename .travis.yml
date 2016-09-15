@@ -11,7 +11,7 @@ php:
   - 5.4
   - 5.5
   - 5.6
-# - 7.0
+  - 7.0
 
 env:
   # plugin code
@@ -31,9 +31,20 @@ env:
     - ECCUBE_VERSION=3.0.10 DB=mysql USER=root DBNAME=myapp_test DBPASS=' ' DBUSER=root
     - ECCUBE_VERSION=3.0.10 DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres
     - ECCUBE_VERSION=3.0.10 DB=sqlite
+    # ec-cube 3.0.11
+    # - ECCUBE_VERSION=3.0.11 DB=mysql USER=root DBNAME=myapp_test DBPASS=' ' DBUSER=root
+    # - ECCUBE_VERSION=3.0.11 DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres
+    # - ECCUBE_VERSION=3.0.11 DB=sqlite
 
 matrix:
   fast_finish: true
+  exclude:
+    - php: 7.0
+      env: ECCUBE_VERSION=3.0.10 DB=mysql USER=root DBNAME=myapp_test DBPASS=' ' DBUSER=root
+    - php: 7.0
+      env: ECCUBE_VERSION=3.0.10 DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres
+    - php: 7.0
+      env: ECCUBE_VERSION=3.0.10 DB=sqlite
 
 before_script:
   # archive plugin
