@@ -29,7 +29,7 @@ class AbstractEccubeApiWebTestCase extends AbstractEccubeApiTestCase
      * @param UserInterface $User ログインさせる User
      * @return Symfony\Component\HttpKernel\Client
      */
-    protected function loginTo(UserInterface $User)
+    public function loginTo(UserInterface $User)
     {
         $firewall = 'admin';
         $role = array('ROLE_ADMIN');
