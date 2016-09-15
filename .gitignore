@@ -1,0 +1,8 @@
+!dummy
+!.gitmodule
+composer.phar
+/vendor/
+/phpunit.xml
+/reports/*
+.idea
+*.php~
