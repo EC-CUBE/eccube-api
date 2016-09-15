@@ -47,6 +47,7 @@ matrix:
       env: ECCUBE_VERSION=3.0.10 DB=sqlite
 
 before_script:
+  - if [[ $TRAVIS_PHP_VERSION =~ ^[5] ]]; then phpenv config-rm xdebug.ini ; fi
   # archive plugin
   - tar cvzf ${HOME}/${PLUGIN_CODE}.tar.gz ./*
   # clone ec-cube
@@ -71,10 +72,14 @@ before_script:
 
 script:
   # exec phpunit on ec-cube
-  - phpunit -c app/Plugin/${PLUGIN_CODE}/phpunit.xml.dist
+  - if [[ $TRAVIS_PHP_VERSION =~ ^[5] ]]; then phpunit -c app/Plugin/${PLUGIN_CODE}/phpunit.xml.dist ; fi
+  - if [[ $TRAVIS_PHP_VERSION =~ ^[7] ]]; then ./vendor/bin/phpunit -c app/Plugin/${PLUGIN_CODE}/phpunit.xml.dist --coverage-clover=coverage.clover ; fi
 
 after_script:
   # disable plugin
   - php app/console plugin:develop disable --code=${PLUGIN_CODE}
   # uninstall plugin
   - php app/console plugin:develop uninstall --code=${PLUGIN_CODE} --uninstall-force=true
+
+after_success:
+  - if [[ $TRAVIS_PHP_VERSION =~ ^[7] ]]; then php vendor/bin/coveralls -v -x coverage.clover ; fi
