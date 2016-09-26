@@ -1,5 +1,8 @@
 # EC-CUBE Web API
 
+[![Build Status](https://travis-ci.org/EC-CUBE/eccube-api.svg?branch=master)](https://travis-ci.org/EC-CUBE/eccube-api)
+[![Coverage Status](https://coveralls.io/repos/github/EC-CUBE/eccube-api/badge.svg?branch=master)](https://coveralls.io/github/EC-CUBE/eccube-api?branch=master)
+
 # インストール方法
 
 あらかじめ, EC-CUBE3のインストールを行った状態で, 以下を実行してください

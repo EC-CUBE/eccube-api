@@ -162,13 +162,17 @@ class EccubeApiController extends AbstractApiController
      */
     public function swaggerUI(Application $app, Request $request)
     {
+        $rootpath = $app['config']['root_urlpath'];
+        if (defined('RELATIVE_PUBLIC_DIR_PATH')) {
+            $rootpath = $app['config']['root_urlpath'].RELATIVE_PUBLIC_DIR_PATH;
+        }
         $swagger = file_get_contents(__DIR__.'/../Resource/swagger-ui/index.html');
         $swagger = str_replace('your-client-id', htmlspecialchars($request->get('client_id'), ENT_QUOTES), $swagger);
         $swagger = str_replace('scopeSeparator: ","', 'scopeSeparator: " "', $swagger);
         $swagger = str_replace('url = "http://petstore.swagger.io/v2/swagger.json";', 'url = "'.$app->url('swagger_yml').'"; window.oAuthRedirectUrl="'.$app->url('swagger_o2c').'";', $swagger);
-        $swagger = preg_replace('/src=\'(.*)\'(.*)/', 'src=\''.$app['config']['root_urlpath'].'/plugin/api/assets/${1}\'${2}', $swagger);
-        $swagger = preg_replace('/src="(.*)"(.*)/', 'src="'.$app['config']['root_urlpath'].'/plugin/api/assets/${1}"${2}', $swagger);
-        $swagger = preg_replace('/link href=\'(.*)\'(.*)/', 'link href=\''.$app['config']['root_urlpath'].'/plugin/api/assets/${1}\'${2}', $swagger);
+        $swagger = preg_replace('/src=\'(.*)\'(.*)/', 'src=\''.$rootpath.'/plugin/api/assets/${1}\'${2}', $swagger);
+        $swagger = preg_replace('/src="(.*)"(.*)/', 'src="'.$rootpath.'/plugin/api/assets/${1}"${2}', $swagger);
+        $swagger = preg_replace('/link href=\'(.*)\'(.*)/', 'link href=\''.$rootpath.'/plugin/api/assets/${1}\'${2}', $swagger);
 
         $Response = new Response();
         $Response->setContent($swagger);
