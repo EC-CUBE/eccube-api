@@ -76,6 +76,9 @@ class EccubeApiEvent
     {
         $request = $event->getRequest();
         $response = $event->getResponse();
+        if ($response->isRedirection()) {
+            return;
+        }
         $html = $response->getContent();
         $crawler = new Crawler($html);
         $oldElement= $crawler->filter('#common_button_box__insert_button');
