@@ -54,8 +54,20 @@ matrix:
       env: ECCUBE_VERSION=master DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres XDEBUG=1
     - php: 5.6
       env: ECCUBE_VERSION=master DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres XDEBUG=1
+    - php: 7.0
+      env: ECCUBE_VERSION=3.0.10 DB=mysql USER=root DBNAME=myapp_test DBPASS=' ' DBUSER=root
+    - php: 7.0
+      env: ECCUBE_VERSION=3.0.10 DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres
+    - php: 7.0
+      env: ECCUBE_VERSION=3.0.10 DB=sqlite
     - php: 7.1
       env: ECCUBE_VERSION=master DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres XDEBUG=1
+    - php: 7.1
+      env: ECCUBE_VERSION=3.0.10 DB=mysql USER=root DBNAME=myapp_test DBPASS=' ' DBUSER=root
+    - php: 7.1
+      env: ECCUBE_VERSION=3.0.10 DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres
+    - php: 7.1
+      env: ECCUBE_VERSION=3.0.10 DB=sqlite
   allow_failures:
     - php: 7.0
       env: ECCUBE_VERSION=master DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres XDEBUG=1
