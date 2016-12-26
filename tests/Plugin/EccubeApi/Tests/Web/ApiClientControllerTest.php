@@ -128,7 +128,7 @@ class ApiClientControllerTest extends AbstractEccubeApiWebTestCase
         $client = $this->logInTo($this->Member);
         $crawler = $client->request(
             'GET',
-            $this->app->path('mypage_api_client_new', array('member_id' => $this->Member->getId()))
+            $this->app->path('admin_setting_system_client_new', array('member_id' => $this->Member->getId()))
         );
 
         $form = $this->createForm($this->MemberClient, $this->MemberUserInfo);
