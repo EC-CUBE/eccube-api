@@ -12,6 +12,7 @@ php:
   - 5.5
   - 5.6
   - 7.0
+  - 7.1
 
 env:
   # plugin code
@@ -20,8 +21,8 @@ env:
   matrix:
     # ec-cube master
     - ECCUBE_VERSION=master DB=mysql USER=root DBNAME=myapp_test DBPASS=' ' DBUSER=root
-                            DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres
     - ECCUBE_VERSION=master DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres
+    - ECCUBE_VERSION=master DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres XDEBUG=1
     - ECCUBE_VERSION=master DB=sqlite
     # ec-cube 3.0.9
     # - ECCUBE_VERSION=3.0.9 DB=mysql USER=root DBNAME=myapp_test DBPASS=' ' DBUSER=root
@@ -35,19 +36,47 @@ env:
     - ECCUBE_VERSION=3.0.11 DB=mysql USER=root DBNAME=myapp_test DBPASS=' ' DBUSER=root
     - ECCUBE_VERSION=3.0.11 DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres
     - ECCUBE_VERSION=3.0.11 DB=sqlite
+    # ec-cube 3.0.12-p1
+    - ECCUBE_VERSION=3.0.12-p1 DB=mysql USER=root DBNAME=myapp_test DBPASS=' ' DBUSER=root
+    - ECCUBE_VERSION=3.0.12-p1 DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres
+    - ECCUBE_VERSION=3.0.12-p1 DB=sqlite
+    # ec-cube 3.0.13
+    - ECCUBE_VERSION=3.0.13 DB=mysql USER=root DBNAME=myapp_test DBPASS=' ' DBUSER=root
+    - ECCUBE_VERSION=3.0.13 DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres
+    - ECCUBE_VERSION=3.0.13 DB=sqlite
 
 matrix:
   fast_finish: true
   exclude:
+    - php: 5.4
+      env: ECCUBE_VERSION=master DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres XDEBUG=1
+    - php: 5.5
+      env: ECCUBE_VERSION=master DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres XDEBUG=1
+    - php: 5.6
+      env: ECCUBE_VERSION=master DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres XDEBUG=1
     - php: 7.0
       env: ECCUBE_VERSION=3.0.10 DB=mysql USER=root DBNAME=myapp_test DBPASS=' ' DBUSER=root
     - php: 7.0
       env: ECCUBE_VERSION=3.0.10 DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres
     - php: 7.0
       env: ECCUBE_VERSION=3.0.10 DB=sqlite
+    - php: 7.1
+      env: ECCUBE_VERSION=master DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres XDEBUG=1
+    - php: 7.1
+      env: ECCUBE_VERSION=3.0.10 DB=mysql USER=root DBNAME=myapp_test DBPASS=' ' DBUSER=root
+    - php: 7.1
+      env: ECCUBE_VERSION=3.0.10 DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres
+    - php: 7.1
+      env: ECCUBE_VERSION=3.0.10 DB=sqlite
+  allow_failures:
+    - php: 7.0
+      env: ECCUBE_VERSION=master DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres XDEBUG=1
+    - php: 7.1
+    - env: DB=sqlite
 
 before_script:
-  - if [[ $TRAVIS_PHP_VERSION =~ ^[5] ]]; then phpenv config-rm xdebug.ini ; fi
+  - if [[ $XDEBUG != 1 ]] ; then phpenv config-rm xdebug.ini ; fi
+  - echo "memory_limit=1024M" >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini
   # archive plugin
   - tar cvzf ${HOME}/${PLUGIN_CODE}.tar.gz ./*
   # clone ec-cube
@@ -55,8 +84,11 @@ before_script:
   - cd ec-cube
   # checkout version
   - sh -c "if [ ! '${ECCUBE_VERSION}' = 'master' ]; then  git checkout -b ${ECCUBE_VERSION} refs/tags/${ECCUBE_VERSION}; fi"
+  - sh -c "if [ '${ECCUBE_VERSION}' = 'master' ]; then  git checkout -b previous 062ad925cd41076a9f86e3fffc549ed584e02243 ; fi"
+
   # update composer
   - composer selfupdate
+  - composer global require --optimize-autoloader "hirak/prestissimo"
   - composer install --dev --no-interaction -o
   # install ec-cube
   - sh -c "if [ '$DB' = 'mysql' ]; then sh ./eccube_install.sh mysql none; fi"
@@ -72,8 +104,8 @@ before_script:
 
 script:
   # exec phpunit on ec-cube
-  - if [[ $TRAVIS_PHP_VERSION =~ ^[5] ]]; then phpunit -c app/Plugin/${PLUGIN_CODE}/phpunit.xml.dist ; fi
-  - if [[ $TRAVIS_PHP_VERSION =~ ^[7] ]]; then ./vendor/bin/phpunit -c app/Plugin/${PLUGIN_CODE}/phpunit.xml.dist --coverage-clover=coverage.clover ; fi
+  - if [[ $XDEBUG != 1 ]]; then phpunit -c app/Plugin/${PLUGIN_CODE}/phpunit.xml.dist ; fi
+  - if [[ $XDEBUG = 1 ]]; then ./vendor/bin/phpunit -c app/Plugin/${PLUGIN_CODE}/phpunit.xml.dist --coverage-clover=coverage.clover ; fi
 
 after_script:
   # disable plugin
@@ -82,4 +114,9 @@ after_script:
   - php app/console plugin:develop uninstall --code=${PLUGIN_CODE} --uninstall-force=true
 
 after_success:
-  - if [[ $TRAVIS_PHP_VERSION =~ ^[7] ]]; then php vendor/bin/coveralls -v -x coverage.clover ; fi
+  - if [[ $XDEBUG != 1 ]]; then php vendor/bin/coveralls -v -x coverage.clover ; fi
+
+# after_failure:
+#   - ls -al app/log/
+#   - 'cat app/log/site_`date +"%Y-%m-%d"`.log'
+#   - 'cat app/log/front_site_`date +"%Y-%m-%d"`.log'
