@@ -58,5 +58,4 @@ swagger ui の画面へ遷移すれば成功です
 
 # 開発ドキュメント
 
-https://ec-cube.github.io/api
-
+https://ec-cube.github.io/#web-api
