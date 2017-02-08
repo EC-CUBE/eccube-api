@@ -12,7 +12,10 @@
 
 namespace Plugin\EccubeApi\ServiceProvider;
 
-require_once(__DIR__ . '/../vendor/autoload.php');
+$autoload = __DIR__ . '/../vendor/autoload.php';
+if (file_exists($autoload) && is_readable($autoload)) {
+    require_once($autoload);
+}
 
 use Eccube\Application;
 use Monolog\Handler\FingersCrossed\ErrorLevelActivationStrategy;
