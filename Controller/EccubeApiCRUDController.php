@@ -88,6 +88,10 @@ class EccubeApiCRUDController extends AbstractApiController
         }
         $excludeAttribute = array_merge($excludeAttribute, $excludes);
 
+        if ($table === 'order') {
+            $searchConditions['OrderStatus'] = $request->query->get('OrderStatus');
+        }
+
         // TODO LIMIT, OFFSET が必要
         if ($table == 'order_detail') { // FIXME EC-CUBE本体側に実装すべき
             $qb = $Repository->createQueryBuilder('od')
