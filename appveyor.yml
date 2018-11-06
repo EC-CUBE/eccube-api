@@ -1,0 +1,82 @@
+# appveyor file
+# http://www.appveyor.com/docs/appveyor-yml
+
+# Set build version format here instead of in the admin panel.
+version: 3.0.x-{build}
+
+cache:
+  - '%LOCALAPPDATA%\Composer\files'
+
+# Fix line endings in Windows. (runs before repo cloning)
+init:
+  - git config --global core.autocrlf input
+
+environment:
+  global:
+    USER: "root"
+    DBNAME: "myapp_test"
+    DBPASS: "Password12!"
+    DBUSER: "root"
+    BASE_DIR: "C:/projects/ec-cube"
+    ECCUBE_VERSION: "master"
+    PLUGIN_CODE: "EccubeApi"
+  matrix:
+  - db: mysql
+    provider: mysql
+
+services:
+  - iis
+  - mysql
+
+# Install scripts. (runs after repo cloning)
+install:
+  - cd  %APPVEYOR_BUILD_FOLDER%
+  - git archive -o %PLUGIN_CODE%.tar.gz HEAD
+
+  - git clone https://github.com/EC-CUBE/ec-cube.git %BASE_DIR%
+  - cd %BASE_DIR%
+  # checkout version
+  #- sh -c "if [ ! '%ECCUBE_VERSION%' = 'master' ]; then  git checkout -b %ECCUBE_VERSION% refs/tags/%ECCUBE_VERSION%; fi"
+  # see https://github.com/phpmd/phpmd/blob/master/appveyor.yml#L10-L13
+  - cinst -y OpenSSL.Light --version 1.1.1
+  - SET PATH=C:\Program Files\OpenSSL;%PATH%
+  - sc config wuauserv start= auto
+  - net start wuauserv
+  # Set MySQL.
+  - cp tests/my.cnf c:\
+  - SET PATH=C:\Program Files\MySql\MySQL Server 5.7\bin\;%PATH%
+  - cinst php --version 7.1.23  --allow-empty-checksums
+  - SET PATH=C:\tools\php71\;%PATH%
+  - copy C:\tools\php71\php.ini-production C:\tools\php71\php.ini
+  - echo date.timezone="Asia/Tokyo" >> C:\tools\php71\php.ini
+  - echo extension_dir=ext >> C:\tools\php71\php.ini
+  - echo extension=php_openssl.dll >> C:\tools\php71\php.ini
+  - echo extension=php_gd2.dll >> C:\tools\php71\php.ini
+  - echo extension=php_mbstring.dll >> C:\tools\php71\php.ini
+  - echo extension=php_pgsql.dll >> C:\tools\php71\php.ini
+  - echo extension=php_pdo_mysql.dll >> C:\tools\php71\php.ini
+  - echo extension=php_pdo_pgsql.dll >> C:\tools\php71\php.ini
+  - echo extension=php_curl.dll >> C:\tools\php71\php.ini
+  - echo extension=php_fileinfo.dll >> C:\tools\php71\php.ini
+  - echo output_buffering = Off >> C:\tools\php71\php.ini
+  - echo default_charset = UTF-8 >> C:\tools\php71\php.ini
+  - echo mbstring.language = Japanese >> C:\tools\php71\php.ini
+  - echo mbstring.encoding_translation = On >> C:\tools\php71\php.ini
+  - echo mbstring.http_input = UTF-8 >> C:\tools\php71\php.ini
+  - echo mbstring.http_output = pass >> C:\tools\php71\php.ini
+  - echo mbstring.internal_encoding = UTF-8 >> C:\tools\php71\php.ini
+  - echo memory_limit = 512M >> C:\tools\php71\php.ini
+  - php -r "readfile('http://getcomposer.org/installer');" | php
+  - php composer.phar install --dev --no-interaction -o
+
+# Don't actually build.
+build: off
+
+before_test:
+  - bash eccube_install.sh mysql none
+  - php app/console plugin:develop install --path=%APPVEYOR_BUILD_FOLDER%/%PLUGIN_CODE%.tar.gz
+    # enable plugin
+  - php app/console plugin:develop enable --code=%PLUGIN_CODE%
+
+test_script:
+  - vendor\bin\phpunit.bat app/Plugin/%PLUGIN_CODE%/Tests
