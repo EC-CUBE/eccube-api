@@ -20,10 +20,10 @@ env:
     PLUGIN_CODE=EccubeApi
   matrix:
     # ec-cube master
-    - ECCUBE_VERSION=master DB=mysql USER=root DBNAME=myapp_test DBPASS=' ' DBUSER=root
-    - ECCUBE_VERSION=master DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres
-    - ECCUBE_VERSION=master DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres XDEBUG=1
-    - ECCUBE_VERSION=master DB=sqlite
+    - ECCUBE_VERSION=3.1 DB=mysql USER=root DBNAME=myapp_test DBPASS=' ' DBUSER=root
+    - ECCUBE_VERSION=3.1 DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres
+    - ECCUBE_VERSION=3.1 DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres XDEBUG=1
+    - ECCUBE_VERSION=3.1 DB=sqlite
     # ec-cube 3.0.13
     - ECCUBE_VERSION=3.0.13 DB=mysql USER=root DBNAME=myapp_test DBPASS=' ' DBUSER=root
     - ECCUBE_VERSION=3.0.13 DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres
@@ -32,22 +32,26 @@ env:
     - ECCUBE_VERSION=3.0.16 DB=mysql USER=root DBNAME=myapp_test DBPASS=' ' DBUSER=root
     - ECCUBE_VERSION=3.0.16 DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres
     - ECCUBE_VERSION=3.0.16 DB=sqlite
+    # ec-cube 3.0.17
+    - ECCUBE_VERSION=3.0.17 DB=mysql USER=root DBNAME=myapp_test DBPASS=' ' DBUSER=root
+    - ECCUBE_VERSION=3.0.17 DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres
+    - ECCUBE_VERSION=3.0.17 DB=sqlite
 
 
 matrix:
   fast_finish: true
   exclude:
     - php: 5.4
-      env: ECCUBE_VERSION=master DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres XDEBUG=1
+      env: ECCUBE_VERSION=3.1 DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres XDEBUG=1
     - php: 5.5
-      env: ECCUBE_VERSION=master DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres XDEBUG=1
+      env: ECCUBE_VERSION=3.1 DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres XDEBUG=1
     - php: 5.6
-      env: ECCUBE_VERSION=master DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres XDEBUG=1
+      env: ECCUBE_VERSION=3.1 DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres XDEBUG=1
     - php: 7.1
-      env: ECCUBE_VERSION=master DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres XDEBUG=1
+      env: ECCUBE_VERSION=3.1 DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres XDEBUG=1
   allow_failures:
     - php: 7.0
-      env: ECCUBE_VERSION=master DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres XDEBUG=1
+      env: ECCUBE_VERSION=3.1 DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres XDEBUG=1
     - php: 7.1
     - env: DB=sqlite
 
@@ -60,9 +64,9 @@ before_script:
   - git clone https://github.com/EC-CUBE/ec-cube.git
   - cd ec-cube
   # checkout version
-  - sh -c "if [ ! '${ECCUBE_VERSION}' = 'master' ]; then  git checkout -b ${ECCUBE_VERSION} refs/tags/${ECCUBE_VERSION}; fi"
-  - sh -c "if [ '${ECCUBE_VERSION}' = 'master' ]; then  git checkout -b previous 062ad925cd41076a9f86e3fffc549ed584e02243 ; fi"
-
+  - sh -c "if [ '${ECCUBE_VERSION}' = '3.1' ]; then  git checkout -b ${ECCUBE_VERSION} origin/${ECCUBE_VERSION}; fi"
+  - sh -c "if [ ! '${ECCUBE_VERSION}' = '3.1' ]; then  git checkout -b ${ECCUBE_VERSION} refs/tags/${ECCUBE_VERSION}; fi"
+  
   # update composer
   - composer selfupdate
   - composer global require --optimize-autoloader "hirak/prestissimo"
