@@ -18,7 +18,7 @@ environment:
     DBPASS: "Password12!"
     DBUSER: "root"
     BASE_DIR: "C:/projects/ec-cube"
-    ECCUBE_VERSION: "master"
+    ECCUBE_VERSION: "3.0"
     PLUGIN_CODE: "EccubeApi"
   matrix:
   - db: mysql
