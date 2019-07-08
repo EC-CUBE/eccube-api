@@ -7,7 +7,6 @@ cache:
     - $HOME/.composer/cache
 
 php:
-#  - 5.3
   - 5.4
   - 5.5
   - 5.6
@@ -19,20 +18,20 @@ env:
   global:
     PLUGIN_CODE=EccubeApi
   matrix:
-    # ec-cube master
+    # ec-cube 3.1
     - ECCUBE_VERSION=3.1 DB=mysql USER=root DBNAME=myapp_test DBPASS=' ' DBUSER=root
     - ECCUBE_VERSION=3.1 DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres
     - ECCUBE_VERSION=3.1 DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres XDEBUG=1
     - ECCUBE_VERSION=3.1 DB=sqlite
-    # ec-cube 3.0.13
-    - ECCUBE_VERSION=3.0.13 DB=mysql USER=root DBNAME=myapp_test DBPASS=' ' DBUSER=root
-    - ECCUBE_VERSION=3.0.13 DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres
-    - ECCUBE_VERSION=3.0.13 DB=sqlite
     # ec-cube 3.0.17
     - ECCUBE_VERSION=3.0.17 DB=mysql USER=root DBNAME=myapp_test DBPASS=' ' DBUSER=root
     - ECCUBE_VERSION=3.0.17 DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres
     - ECCUBE_VERSION=3.0.17 DB=sqlite
-    # ec-cube 3.0.x
+    # ec-cube 3.0.18
+    - ECCUBE_VERSION=3.0.18 DB=mysql USER=root DBNAME=myapp_test DBPASS=' ' DBUSER=root
+    - ECCUBE_VERSION=3.0.18 DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres
+    - ECCUBE_VERSION=3.0.18 DB=sqlite
+    # ec-cube 3.0
     - ECCUBE_VERSION=3.0 DB=mysql USER=root DBNAME=myapp_test DBPASS=' ' DBUSER=root
     - ECCUBE_VERSION=3.0 DB=pgsql USER=postgres DBNAME=myapp_test DBPASS=password DBUSER=postgres
     - ECCUBE_VERSION=3.0 DB=sqlite
